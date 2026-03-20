@@ -14,4 +14,4 @@ def load_coconut_model(device="cuda"):
     return _load("checkpoints/coconut", device)
 
 def load_verbal_cot_model(device="cuda"):
-    return _load("checkpoints/verbal_cot", device)
+    return _load("checkpoints/verbal_cot/final", device)
