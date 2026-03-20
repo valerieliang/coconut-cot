@@ -14,6 +14,10 @@ dependencies:
       - matplotlib
       - numpy<2
       - sentencepiece
+      - einops 
+      - pandas 
+      - seaborn 
+      - jupyter
 
 # install pytorch separately from other packages
 # pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu128
