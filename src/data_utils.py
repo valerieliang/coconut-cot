@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+from datasets import Dataset
 from sklearn.model_selection import train_test_split
 
 def parse_example(ex):
@@ -54,3 +55,23 @@ def load_and_split(
     print(f"\nSaved {len(result)} rows -> {save_path}")
     print(result.groupby(["n_hops", "split"]).size())
     return result
+
+def load_split(path, split=None):
+    df = pd.read_csv(path)
+    df["steps"] = df["steps"].apply(json.loads)
+    return df if split is None else df[df["split"] == split].reset_index(drop=True)
+
+def format_cot(df, tokenizer):
+    texts = []
+    for _, row in df.iterrows():
+        steps  = " ".join(row["steps"])
+        text   = row["question"] + " " + steps + " " + row["answer"]
+        texts.append(text)
+    enc = tokenizer(
+        texts,
+        truncation=True,
+        padding="max_length",
+        max_length=512,
+    )
+    enc["labels"] = enc["input_ids"].copy()
+    return Dataset.from_dict(enc)
