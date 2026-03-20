@@ -21,3 +21,4 @@ dependencies:
 
 # install pytorch separately from other packages
 # pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu128
+# pip install wandb --quiet   # install it so the import doesn't fail if dataset.py touches it
