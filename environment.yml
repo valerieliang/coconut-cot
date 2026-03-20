@@ -1,21 +1,19 @@
 name: coconut
 channels:
+  - conda-forge
   - defaults
 dependencies:
   - python=3.10
   - pip
   - pip:
-      - transformers
+      - transformers==4.41.2
       - datasets
       - accelerate
       - scikit-learn
-      - numpy
-      - pandas
       - tqdm
       - matplotlib
-      - seaborn
-      - einops
+      - numpy<2
+      - sentencepiece
 
-# install pytorch after activation
-# conda activate coconut
-# pip install torch==2.2.2+cu121 torchvision==0.17.2+cu121 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
+# install pytorch separately from other packages
+# pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu128
