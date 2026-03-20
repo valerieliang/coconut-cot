@@ -26,7 +26,7 @@ def load_and_split(
     print("Hop distribution in raw data:")
     print(df.n_hops.value_counts().sort_index())
 
-    # No n_hops=2 in this file — use 3,4,5 only
+    # No n_hops=2 in this file -- use 3,4,5 only
     df = df[df.n_hops.isin([3, 4, 5])]
 
     # Sample per hop level, keeping n_hops column intact
@@ -51,6 +51,6 @@ def load_and_split(
 
     import os; os.makedirs("data", exist_ok=True)
     result.to_csv(save_path, index=False)
-    print(f"\nSaved {len(result)} rows → {save_path}")
+    print(f"\nSaved {len(result)} rows -> {save_path}")
     print(result.groupby(["n_hops", "split"]).size())
     return result
