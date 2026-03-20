@@ -1,2 +1,16 @@
-coconut_cot.egg-info
-__pycache__
+# model checkpoints (large files)
+checkpoints/
+
+# data representations (large numpy arrays)
+data/reps/
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# jupyter
+.ipynb_checkpoints/
+
+# misc
+.env
