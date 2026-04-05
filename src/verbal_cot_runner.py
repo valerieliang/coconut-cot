@@ -41,25 +41,42 @@ def extract_verbal_representations(
 
         # Find token positions for each [STEP k] delimiter
         step_reps = []
+
+        # Tokenize each step and the answer prefix to find boundaries.
+        # Format: question\nstep1\nstep2\n...\n### answer
+        # We want the activation at the last token of each step's content,
+        # i.e. the token just before the \n that follows it.
+
+        step_token_seqs = [
+            tokenizer.encode(s + "\n", add_special_tokens=False)
+            for s in row["steps"]
+        ]
+        ans_prefix_tokens = tokenizer.convert_ids_to_tokens(
+            tokenizer.encode("\n### ", add_special_tokens=False)
+        )
+
         for k in range(len(row["steps"])):
-            marker = f"[STEP {k+1}]"
-            # Locate the last token of step k's content:
-            # find marker position, then find the next marker or [ANS] as boundary
-            marker_tokens = tokenizer.encode(marker, add_special_tokens=False)
-            next_marker = f"[STEP {k+2}]" if k + 1 < len(row["steps"]) else "[ANS]"
-            next_tokens = tokenizer.encode(next_marker, add_special_tokens=False)
+            # Find the start of step k's token sequence in the full token list
+            step_toks = tokenizer.convert_ids_to_tokens(step_token_seqs[k])
+            start_pos = find_subsequence(tokens, step_toks)
 
-            # Search for marker sequence in token list
-            start_pos = find_subsequence(tokens, tokenizer.convert_ids_to_tokens(marker_tokens))
-            end_pos   = find_subsequence(tokens, tokenizer.convert_ids_to_tokens(next_tokens))
-
-            if start_pos == -1 or end_pos == -1:
-                step_reps.append(None)   # extraction failed — log and skip
+            if start_pos == -1:
+                step_reps.append(None)
                 print(f"WARNING: could not locate step {k+1} in problem {row.name}")
                 continue
 
-            # Take activation at the last token before the next marker
-            rep = hidden[end_pos - 1].tolist()
+            # The step content ends at the token before the trailing \n
+            # step_toks includes the \n, so the last content token is at:
+            #   start_pos + len(step_toks) - 2
+            # (subtract 1 for 0-indexing end, subtract 1 more to exclude the \n)
+            last_content_pos = start_pos + len(step_toks) - 2
+
+            if last_content_pos < 0 or last_content_pos >= hidden.shape[0]:
+                step_reps.append(None)
+                print(f"WARNING: step {k+1} boundary out of range in problem {row.name}")
+                continue
+
+            rep = hidden[last_content_pos].tolist()
             step_reps.append(rep)
 
         results.append({

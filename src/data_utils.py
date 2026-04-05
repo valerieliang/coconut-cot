@@ -62,10 +62,12 @@ def load_split(path, split=None):
     return df if split is None else df[df["split"] == split].reset_index(drop=True)
 
 def format_cot(df, tokenizer):
+    # Format for verbal CoT baseline
     texts = []
     for _, row in df.iterrows():
-        steps = "".join(f" [STEP {i+1}] {s}" for i, s in enumerate(row["steps"]))
-        text  = row["question"] + steps + " [ANS] " + row["answer"]
+        steps = "\n".join(row["steps"])
+        # Coconut repo format: question\n + steps\n + ### answer + eos
+        text = row["question"] + "\n" + steps + "\n### " + row["answer"]
         texts.append(text)
     enc = tokenizer(
         texts,
