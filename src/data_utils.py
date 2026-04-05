@@ -27,7 +27,7 @@ def load_and_split(
     print("Hop distribution in raw data:")
     print(df.n_hops.value_counts().sort_index())
 
-    # No n_hops=2 in this file -- use 3,4,5 only
+    # ProsQA contains only 3–5 hop problems; H=2 is absent from this split.
     df = df[df.n_hops.isin([3, 4, 5])]
 
     # Sample per hop level, keeping n_hops column intact
@@ -64,8 +64,8 @@ def load_split(path, split=None):
 def format_cot(df, tokenizer):
     texts = []
     for _, row in df.iterrows():
-        steps  = " ".join(row["steps"])
-        text   = row["question"] + " " + steps + " " + row["answer"]
+        steps = "".join(f" [STEP {i+1}] {s}" for i, s in enumerate(row["steps"]))
+        text  = row["question"] + steps + " [ANS] " + row["answer"]
         texts.append(text)
     enc = tokenizer(
         texts,
