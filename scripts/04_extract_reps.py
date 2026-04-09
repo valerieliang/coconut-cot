@@ -1,5 +1,5 @@
 # scripts/04_extract_reps.py
-# This script re-runs both runners cleanly as a single reproducible step.
+# This script runs both runners cleanly as a single reproducible step.
 
 import sys, os
 sys.path.insert(0, os.path.abspath("."))
