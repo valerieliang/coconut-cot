@@ -1,8 +1,7 @@
-# model checkpoints (large files)
+# large files
 checkpoints/
+data/
 
-# data representations (large numpy arrays)
-data/reps/
 
 # python
 __pycache__/
