@@ -3,7 +3,7 @@
 Causal Steering Experiment: Comparing Verbal CoT vs Coconut
 
 Key fix: Use embedding-space directions instead of trained probes when
-training data is insufficient. This is actually more principled—we want
+training data is insufficient. This is actually more principled--we want
 the semantic direction between two concepts in embedding space.
 """
 
@@ -419,7 +419,7 @@ def run_full_experiment():
         sig_str = "**" if stats_dict["significant"] else ""
         print(f"{stats_dict['model']:<10} {stats_dict['direction_type']:<10} "
               f"{stats_dict['relative_step']:<10} "
-              f"{stats_dict['mean_effect']:+.3f} ± {stats_dict['sem']:.3f}   "
+              f"{stats_dict['mean_effect']:+.3f} +/- {stats_dict['sem']:.3f}   "
               f"{stats_dict['p_value']:.4f}   {stats_dict['n']:<5} {sig_str}")
     
     if not summary:
@@ -428,29 +428,46 @@ def run_full_experiment():
     # ============================================================
     # 8. Save results
     # ============================================================
+
     os.makedirs("results/steering", exist_ok=True)
     
-    # Convert results to JSON-serializable format
     clean_results = []
     for res in all_results:
         clean_res = res.copy()
         if "results" in clean_res and clean_res["results"]:
-            clean_res["results"] = {
-                str(k): v for k, v in clean_res["results"].items()
-            }
+            clean_res["results"] = {str(k): v for k, v in clean_res["results"].items()}
+        # Convert any numpy types to Python native types
+        for key in ["problem_id", "steer_step", "concept_step", "n_hops"]:
+            if key in clean_res:
+                if hasattr(clean_res[key], 'item'):
+                    clean_res[key] = clean_res[key].item()
         clean_results.append(clean_res)
     
     with open("results/steering/full_results.json", "w") as f:
         json.dump(clean_results, f, indent=2)
     
+    # Convert summary to JSON-serializable format
+    clean_summary = {}
+    for key, stats_dict in summary.items():
+        clean_summary[key] = {
+            "model": str(stats_dict["model"]),
+            "direction_type": str(stats_dict["direction_type"]),
+            "relative_step": int(stats_dict["relative_step"]),
+            "mean_effect": float(stats_dict["mean_effect"]),
+            "sem": float(stats_dict["sem"]),
+            "p_value": float(stats_dict["p_value"]),
+            "n": int(stats_dict["n"]),
+            "significant": bool(stats_dict["significant"]),  # Convert np.bool_ to bool
+        }
+    
     with open("results/steering/summary.json", "w") as f:
-        json.dump(summary, f, indent=2)
+        json.dump(clean_summary, f, indent=2)
     
     print(f"\nResults saved to results/steering/")
     print(f"  - full_results.json ({len(all_results)} trials)")
-    print(f"  - summary.json ({len(summary)} conditions)")
+    print(f"  - summary.json ({len(clean_summary)} conditions)")
     
-    return summary, all_results
+    return clean_summary, clean_results
 
 
 if __name__ == "__main__":

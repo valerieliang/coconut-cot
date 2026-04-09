@@ -16,29 +16,24 @@ def run_verbal_steering(
     alphas=[0.0, 1.0, 2.0, 5.0, 10.0],
     device="cuda",
     layer=-1,
-    steering_vector=None,  # Main parameter - pre-computed direction
-    steering_direction=None,  # Legacy parameter for compatibility
+    steering_vector=None,
 ):
     """
     Steer verbal CoT by modifying the hidden state at the end of a reasoning step.
     
     Args:
-        steering_vector: Pre-computed direction vector (primary)
-        steering_direction: Legacy parameter (fallback)
+        steering_vector: Pre-computed direction vector
     """
     
-    # Handle both parameter names
-    direction_input = steering_vector if steering_vector is not None else steering_direction
-    
-    if direction_input is None:
+    if steering_vector is None:
         print("No steering direction provided")
         return None
     
     # Convert to tensor
-    if isinstance(direction_input, np.ndarray):
-        direction = torch.from_numpy(direction_input).float()
+    if isinstance(steering_vector, np.ndarray):
+        direction = torch.from_numpy(steering_vector).float()
     else:
-        direction = direction_input.float()
+        direction = steering_vector.float()
     
     # Tokenize concepts
     tokens_a = tokenizer.encode(" " + concept_a, add_special_tokens=False)
