@@ -1,0 +1,12 @@
+{
+  "verbal_mean": 0.9047305764411028,
+  "coconut_mean": 0.8875000000000001,
+  "difference": 0.017230576441102707,
+  "verbal_std": 0.10215889689847733,
+  "coconut_std": 0.0691373595807355,
+  "ttest_statistic": 0.5257911256919682,
+  "ttest_p": 0.609469518791842,
+  "wilcoxon_statistic": 17.5,
+  "wilcoxon_p": 0.58984375,
+  "n_pairs": 12
+}
