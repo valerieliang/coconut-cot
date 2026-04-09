@@ -34,7 +34,6 @@ def load_coconut_model(device="cuda"):
     )
     model.load_state_dict(state)
 
-    # Coconut.eval() doesn't return self, so don't chain it
     model.to(device)
     model.eval()
     return model, tokenizer

@@ -21,7 +21,7 @@ def build_probe_dataset(records, step_idx, rep_key="step_reps"):
 
     Label = the derived concept at step_idx (e.g. "scrompus", "rempus").
     This tests whether the model's representation at step k encodes
-    exactly the concept reached at step k — not the final answer,
+    exactly the concept reached at step k -- not the final answer,
     not a future step.
 
     Skips problems where:
@@ -72,7 +72,7 @@ def train_probe(X, y, n_splits=5):
         cv=StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42),
         max_iter=1000,
         scoring="balanced_accuracy",
-        multi_class="multinomial",  # concepts are multi-class not binary
+        multi_class="multinomial",
     )
     outer_cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
     scores = cross_val_score(
@@ -97,7 +97,6 @@ def run_probe_grid(records, max_steps, rep_key="step_reps"):
     results = []
     for k in range(max_steps):
         for n_hops in [3, 4, 5]:
-            # Filter to problems of this hop count only
             subset = [r for r in records if r["n_hops"] == n_hops]
             X, y, meta = build_probe_dataset(subset, step_idx=k, rep_key=rep_key)
 
@@ -110,7 +109,7 @@ def run_probe_grid(records, max_steps, rep_key="step_reps"):
             print(
                 f"  step={k} hops={n_hops}: "
                 f"acc={result['mean']:.3f} "
-                f"± {(result['ci_high']-result['mean']):.3f} "
+                f"+/- {(result['ci_high']-result['mean']):.3f} "
                 f"(n={result['n']}, classes={result['n_classes']})",
                 flush=True,
             )
@@ -132,13 +131,12 @@ def run_cross_step_probe(records, rep_key="step_reps", max_steps=5):
     """
     matrix = np.full((max_steps, max_steps), np.nan)
 
-    for k in range(max_steps):  # representation step
-        for j in range(max_steps):  # label step
+    for k in range(max_steps):
+        for j in range(max_steps):
             X, y_rep, _ = build_probe_dataset(records, step_idx=k, rep_key=rep_key)
             if len(X) < 10:
                 continue
 
-            # Get labels for step j from the same problems
             y_label = []
             X_filtered = []
             for rec in records:

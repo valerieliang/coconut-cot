@@ -24,8 +24,6 @@ def extract_coconut_representations(
     for _, row in df.iterrows():
         n_hops = int(row["n_hops"])
 
-        # Build input: question + <start_latent> + [<latent>]*n_hops + <end_latent>
-        # This matches get_question_latent_dataset from dataset.py exactly
         question_ids = tokenizer.encode(
             row["question"] + "\n", add_special_tokens=True
         )
@@ -39,10 +37,6 @@ def extract_coconut_representations(
         attn_mask    = torch.ones_like(input_tensor)
 
         with torch.no_grad():
-            # generate() with output_embedding=True returns the full
-            # inputs_embeds tensor after all latent slots have been filled
-            # with continuous thought vectors via the recurrence loop.
-            # Shape of new_inputs_embeds: (1, seq_len + generated_tokens, d_model)
             _, filled_embeds = model.generate(
                 input_ids=input_tensor,
                 attention_mask=attn_mask,
@@ -50,17 +44,9 @@ def extract_coconut_representations(
                 output_embedding=True,
             )
 
-        # Locate the latent token positions in the original input
-        # The latent tokens sit at positions: len(question_ids)+1 through
-        # len(question_ids)+n_hops (inclusive), i.e. after <start_latent>
-        latent_start_pos = len(question_ids) + 1  # +1 to skip <start_latent>
+        latent_start_pos = len(question_ids) + 1
         latent_positions  = list(range(latent_start_pos, latent_start_pos + n_hops))
 
-        # Extract the embedding at each latent position from filled_embeds.
-        # Per the paper and coconut.py: the continuous thought c_k placed at
-        # position p is the hidden state h_{p-1}, which Coconut has already
-        # written into inputs_embeds[p] via the recurrence. So we read
-        # filled_embeds[:, p, :] directly 
         thought_reps = []
         for pos in latent_positions:
             if pos < filled_embeds.shape[1]:
@@ -71,7 +57,6 @@ def extract_coconut_representations(
                 print(f"WARNING: latent pos {pos} out of range for problem {row.name}",
                       flush=True)
 
-        # Sanity check: should always have exactly n_hops thought vectors
         if len(thought_reps) != n_hops:
             print(f"WARNING: expected {n_hops} thought reps, got {len(thought_reps)} "
                   f"for problem {row.name}", flush=True)
@@ -89,7 +74,6 @@ def extract_coconut_representations(
         json.dump(results, f)
     print(f"Saved {len(results)} problems -> {output_path}", flush=True)
     return results
-
 
 if __name__ == "__main__":
     extract_coconut_representations()
