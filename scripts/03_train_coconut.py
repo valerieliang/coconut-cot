@@ -21,7 +21,6 @@ if __name__ == '__main__':
     set_seed(42)
     device = "cuda"
 
-    # ── Tokenizer ────────────────────────────────────────────────────────────
     tokenizer = AutoTokenizer.from_pretrained("checkpoints/tokenizer")
     tokenizer.pad_token    = tokenizer.eos_token
     tokenizer.padding_side = "right"
@@ -30,15 +29,12 @@ if __name__ == '__main__':
     start_id  = tokenizer.convert_tokens_to_ids("<start_latent>")
     end_id    = tokenizer.convert_tokens_to_ids("<end_latent>")
 
-    # ── Base model ───────────────────────────────────────────────────────────
     base_lm = AutoModelForCausalLM.from_pretrained("gpt2-medium")
     base_lm.resize_token_embeddings(len(tokenizer))
     model = Coconut(base_lm, latent_id, start_id, end_id, tokenizer.eos_token_id).to(device)
 
-    # ── Dataset ──────────────────────────────────────────────────────────────
     base_dataset = get_dataset("coconut/data/prosqa_test.json", tokenizer)
 
-    # Truncate sequences to keep memory bounded
     def truncate(example):
         for key in ["question_tokenized", "answer_tokenized"]:
             if key in example and len(example[key]) > 256:
@@ -56,10 +52,9 @@ if __name__ == '__main__':
 
     collator = MyCollator(tokenizer=tokenizer, latent_id=latent_id)
 
-    # ── Curriculum ───────────────────────────────────────────────────────────
     EPOCHS_PER_STAGE = 5
     BATCH_SIZE       = 2
-    GRAD_ACCUM_STEPS = 4    # effective batch size = 8
+    GRAD_ACCUM_STEPS = 4
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.01)
 
@@ -117,9 +112,8 @@ if __name__ == '__main__':
                 if step % 20 == 0:
                     print(f"  stage {stage} | epoch {epoch} | step {step} | loss {loss.item() * GRAD_ACCUM_STEPS:.4f}", flush=True)
 
-            print(f"  → epoch {epoch} mean loss: {total_loss/len(loader):.4f}", flush=True)
+            print(f"  -> epoch {epoch} mean loss: {total_loss/len(loader):.4f}", flush=True)
 
-    # ── Save ─────────────────────────────────────────────────────────────────
     os.makedirs("checkpoints/coconut/final", exist_ok=True)
     model.base_causallm.save_pretrained("checkpoints/coconut/final")
     tokenizer.save_pretrained("checkpoints/coconut/final")

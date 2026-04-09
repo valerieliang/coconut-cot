@@ -28,6 +28,6 @@ if __name__ == "__main__":
     )
 
     print()
-    print("Both extraction complete.")
+    print("Extraction complete.")
     print("  data/verbal_reps.json")
     print("  data/coconut_reps.json")

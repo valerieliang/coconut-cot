@@ -7,12 +7,11 @@ from src.model_utils import load_base_model
 from src.data_utils import load_split, format_cot
 from transformers import AutoTokenizer, Trainer, TrainingArguments, DataCollatorForLanguageModeling
 
-# Use the saved tokenizer with special tokens
 tokenizer = AutoTokenizer.from_pretrained("checkpoints/tokenizer")
 tokenizer.pad_token = tokenizer.eos_token
 
 model, _ = load_base_model()
-model.resize_token_embeddings(len(tokenizer))   # ← critical: match tokenizer vocab size
+model.resize_token_embeddings(len(tokenizer))
 
 train_data = load_split("data/prontoqa_split.csv", split="train")
 print(f"Training on {len(train_data)} examples")
@@ -21,7 +20,7 @@ dataset = format_cot(train_data, tokenizer)
 
 args = TrainingArguments(
     output_dir="checkpoints/verbal_cot",
-    num_train_epochs=10,               # small dataset — needs more epochs
+    num_train_epochs=10,
     per_device_train_batch_size=8,
     fp16=True,
     learning_rate=5e-5,
@@ -39,7 +38,6 @@ trainer = Trainer(
 )
 trainer.train()
 
-# Save final checkpoint where load_verbal_cot_model expects it
 model.save_pretrained("checkpoints/verbal_cot/final")
 tokenizer.save_pretrained("checkpoints/verbal_cot/final")
 print("Done. Saved to checkpoints/verbal_cot/final/")
