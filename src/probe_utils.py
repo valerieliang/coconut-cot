@@ -9,6 +9,8 @@ from scipy import stats
 from collections import defaultdict
 import json
 import warnings
+import pickle
+from collections import Counter
 
 
 def extract_derived_concept(step_string):
@@ -340,3 +342,93 @@ def compare_models_statistical(verbal_results, coconut_results):
         "n_pairs": 0,
         "note": "insufficient data for statistical test"
     }
+
+def train_binary_concept_direction(records, concept_a, concept_b, rep_key="step_reps",
+                                   output_path=None, C=1.0):
+    """
+    Train a binary logistic regression probe to distinguish concept_a from concept_b.
+    Returns the normalized weight vector (steering direction) and saves it.
+    """
+    X, y = [], []
+
+    for rec in records:
+        reps = rec[rep_key]
+        steps = rec["ground_truth_steps"]
+
+        for rep, step in zip(reps, steps):
+            if rep is None:
+                continue
+            concept = extract_derived_concept(step)
+            if concept == concept_a:
+                X.append(rep)
+                y.append(1)  # positive class = concept_a
+            elif concept == concept_b:
+                X.append(rep)
+                y.append(0)  # negative class = concept_b
+
+    X = np.array(X)
+    y = np.array(y)
+
+    print(f"Training binary probe: {concept_a} (n={sum(y==1)}) vs {concept_b} (n={sum(y==0)})")
+
+    if len(X) < 10 or len(np.unique(y)) < 2:
+        print("  -> Insufficient data")
+        return None
+
+    clf = LogisticRegression(C=C, max_iter=1000, solver='liblinear')
+    clf.fit(X, y)
+
+    train_acc = clf.score(X, y)
+    print(f"  Training accuracy: {train_acc:.3f}")
+
+    # Direction is the coefficient vector, pointing toward concept_a (class 1)
+    direction = clf.coef_[0]
+    # Normalize to unit length
+    direction = direction / np.linalg.norm(direction)
+
+    # Also compute intercept for reference
+    intercept = clf.intercept_[0]
+
+    result = {
+        "direction": direction.tolist(),
+        "intercept": float(intercept),
+        "concept_a": concept_a,
+        "concept_b": concept_b,
+        "train_accuracy": train_acc,
+        "n_a": int(sum(y==1)),
+        "n_b": int(sum(y==0)),
+        "C": C
+    }
+
+    if output_path:
+        with open(output_path, 'w') as f:
+            json.dump(result, f, indent=2)
+        print(f"  Saved to {output_path}")
+
+    return direction
+
+
+def find_common_concept_pairs(records, rep_key="step_reps", min_freq=5):
+    """
+    Identify common concept pairs that appear frequently enough for steering.
+    Returns list of (concept_a, concept_b, count_a, count_b).
+    """
+    concept_counts = Counter()
+    for rec in records:
+        for step in rec["ground_truth_steps"]:
+            concept = extract_derived_concept(step)
+            concept_counts[concept] += 1
+
+    # Find concepts that appear together in the ontology (e.g., from same "family")
+    # For ProntoQA, concepts are often of form "Xpus" where X varies.
+    # We'll just take the most frequent ones and pair them.
+    common = [c for c, cnt in concept_counts.most_common(20) if cnt >= min_freq]
+
+    pairs = []
+    for i, ca in enumerate(common):
+        for cb in common[i+1:]:
+            # Simple heuristic: they might be related if they share suffix
+            if ca[-4:] == cb[-4:] or len(set(ca) & set(cb)) > 3:
+                pairs.append((ca, cb, concept_counts[ca], concept_counts[cb]))
+
+    return pairs

@@ -1,0 +1,10 @@
+{
+  "verbal_true_rel-1": {
+    "model": "verbal",
+    "direction_type": "true",
+    "relative_step": -1,
+    "mean_effect": 150.02733732152868,
+    "sem": 0.5805093920440321,
+    "p_value": 1.1869083614191197e-45,
+    "n": 27,
+    "significant": 
