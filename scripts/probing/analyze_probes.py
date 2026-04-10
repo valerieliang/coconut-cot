@@ -1,5 +1,3 @@
-is this file good for analyze probes
-
 import json
 import numpy as np
 import matplotlib.pyplot as plt
