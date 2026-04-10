@@ -119,7 +119,7 @@ def extract_verbal_representations(
     print(f"Total None step_reps: {n_none_total}")
     if n_none_total > 0:
         print(
-            "  ↳ Non-zero Nones usually mean the step text was truncated by "
+            "  -> Non-zero Nones usually mean the step text was truncated by "
             "MAX_LENGTH or the tokenizer doesn't support offset_mapping. "
             "Try increasing MAX_LENGTH or upgrading transformers."
         )
