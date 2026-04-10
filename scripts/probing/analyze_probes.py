@@ -1,328 +1,317 @@
+# scripts/probing/analyze_probes.py
+import sys, os
+sys.path.insert(0, os.path.abspath("."))
+
 import json
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
+from pathlib import Path
 
-print("=" * 60)
-print("ANALYZING RESULTS")
-print("=" * 60)
+# Use results/probing/ directory for data
+RESULTS_DIR = "results/probing"
+# Save figures to figures/probing/
+FIGURES_DIR = "figures/probing"
 
-# Style settings
-sns.set_theme(style="white", context="talk")
-
-plt.rcParams.update({
-    'font.size': 10,
-    'font.family': 'DejaVu Sans',
-    'figure.dpi': 150,
-    'savefig.dpi': 300,
-    'axes.labelsize': 11,
-    'axes.titlesize': 12,
-    'legend.fontsize': 9,
-})
-
-COLORS = {
-    "verbal": "#4C78A8",
-    "coconut": "#F58518",
-    "grid": "#E5E5E5",
-    "text": "#333333"
-}
-
-def clean_axis(ax):
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.grid(True, axis='y', color=COLORS["grid"], linewidth=0.8)
-    ax.grid(False, axis='x')
+os.makedirs(FIGURES_DIR, exist_ok=True)
 
 
-# Data loading
-print("\n[1/5] Loading data...")
 def load_all_results():
-    with open("results/verbal_cot_binary_probe.json") as f:
-        verbal_binary = json.load(f)
-    with open("results/coconut_binary_probe.json") as f:
-        coconut_binary = json.load(f)
-
-    with open("results/verbal_cot_progress_probe.json") as f:
-        verbal_progress = json.load(f)
-    with open("results/coconut_progress_probe.json") as f:
-        coconut_progress = json.load(f)
-
-    verbal_matrix = np.load("results/verbal_cot_binary_matrix.npy")
-    coconut_matrix = np.load("results/coconut_binary_matrix.npy")
-    verbal_pvals = np.load("results/verbal_cot_binary_pvalues.npy")
-    coconut_pvals = np.load("results/coconut_binary_pvalues.npy")
-
-    with open("results/statistical_comparison.json") as f:
-        stats = json.load(f)
-
-    return {
-        'verbal_binary': verbal_binary,
-        'coconut_binary': coconut_binary,
-        'verbal_progress': verbal_progress,
-        'coconut_progress': coconut_progress,
-        'verbal_matrix': verbal_matrix,
-        'coconut_matrix': coconut_matrix,
-        'verbal_pvals': verbal_pvals,
-        'coconut_pvals': coconut_pvals,
-        'stats': stats
-    }
-
-
-data = load_all_results()
-os.makedirs("figures", exist_ok=True)
-
-# Print summary statistics
-stats = data['stats']
-print(f"\n--- SUMMARY STATISTICS ---")
-print(f"Diagonal Accuracy (mean +- std):")
-print(f"  Verbal CoT: {stats['verbal_mean']:.3f} +- {stats['verbal_std']:.3f}")
-print(f"  Coconut:    {stats['coconut_mean']:.3f} +- {stats['coconut_std']:.3f}")
-print(f"  Difference: {stats['difference']:+.3f}")
-print(f"\nStatistical tests (n={stats['n_pairs']} pairs):")
-print(f"  Paired t-test: t={stats['ttest_statistic']:.3f}, p={stats['ttest_p']:.4f}")
-print(f"  Wilcoxon:      W={stats['wilcoxon_statistic']:.1f}, p={stats['wilcoxon_p']:.4f}")
-
-print(f"\n--- PROGRESS STAGE ACCURACY ---")
-for stage in ['early', 'middle', 'late']:
-    v = data['verbal_progress'][stage]
-    c = data['coconut_progress'][stage]
-    v_mean = v.get('mean', float('nan'))
-    c_mean = c.get('mean', float('nan'))
-    if not np.isnan(v_mean) and not np.isnan(c_mean):
-        diff = v_mean - c_mean
-        print(f"  {stage:8s}: Verbal={v_mean:.3f}, Coconut={c_mean:.3f} (diff={diff:+.3f})")
-    else:
-        print(f"  {stage:8s}: insufficient data")
-
-# Figure 1: Heatmaps
-print("\n[2/5] Generating heatmaps...")
-fig, axes = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
-
-for idx, (model_name, matrix, pvals) in enumerate([
-    ('Verbal CoT', data['verbal_matrix'], data['verbal_pvals']),
-    ('Coconut', data['coconut_matrix'], data['coconut_pvals'])
-]):
-    ax = axes[idx]
-    mask = np.isnan(matrix)
-
-    sns.heatmap(
-        matrix,
-        ax=ax,
-        cmap="Blues",
-        vmin=0.4,
-        vmax=1.0,
-        cbar=idx == 1,
-        square=True,
-        linewidths=0.5,
-        linecolor="white",
-        mask=mask,
-        annot=False
-    )
-
-    for i in range(matrix.shape[0]):
-        for j in range(matrix.shape[1]):
-            if np.isnan(matrix[i, j]):
-                continue
-
-            val = matrix[i, j]
-
-            if i == j or val > 0.75:
-                text = f"{val:.2f}"
-                if not np.isnan(pvals[i, j]) and pvals[i, j] < 0.05:
-                    text += "*"
-
-                ax.text(
-                    j + 0.5, i + 0.5, text,
-                    ha='center', va='center',
-                    fontsize=8,
-                    color='white' if val > 0.65 else COLORS["text"]
-                )
-
-    ax.set_title(model_name, fontweight='semibold')
-    ax.set_xlabel("Label Step")
-    ax.set_ylabel("Representation Step")
-
-    ax.set_xticks(np.arange(matrix.shape[0]) + 0.5)
-    ax.set_yticks(np.arange(matrix.shape[0]) + 0.5)
-    ax.set_xticklabels(range(matrix.shape[0]), rotation=0)
-    ax.set_yticklabels(range(matrix.shape[0]), rotation=0)
-
-plt.suptitle("Cross-Step Faithfulness Matrices", fontweight='semibold')
-plt.savefig("figures/cross_step_matrices.png", bbox_inches='tight')
-plt.savefig("figures/cross_step_matrices.pdf", bbox_inches='tight')
-plt.close()
-print("  -> Saved figures/cross_step_matrices.png/pdf")
+    """Load all probe results from results/probing/"""
+    data = {}
+    
+    for model in ["verbal_cot", "coconut"]:
+        probe_file = Path(RESULTS_DIR) / f"{model}_binary_probe.json"
+        matrix_file = Path(RESULTS_DIR) / f"{model}_binary_matrix.npy"
+        pvalues_file = Path(RESULTS_DIR) / f"{model}_binary_pvalues.npy"
+        progress_file = Path(RESULTS_DIR) / f"{model}_progress_probe.json"
+        
+        if probe_file.exists():
+            with open(probe_file) as f:
+                data[f"{model}_binary"] = json.load(f)
+            print(f"  Loaded {probe_file}")
+        
+        if matrix_file.exists():
+            data[f"{model}_matrix"] = np.load(matrix_file)
+            data[f"{model}_pvalues"] = np.load(pvalues_file)
+            print(f"  Loaded {matrix_file}")
+        
+        if progress_file.exists():
+            with open(progress_file) as f:
+                data[f"{model}_progress"] = json.load(f)
+            print(f"  Loaded {progress_file}")
+    
+    # Load statistical comparison
+    stats_file = Path(RESULTS_DIR) / "statistical_comparison.json"
+    if stats_file.exists():
+        with open(stats_file) as f:
+            data["stats"] = json.load(f)
+        print(f"  Loaded {stats_file}")
+    
+    return data
 
 
-# Figure 2: Trajectories
-print("\n[3/5] Generating trajectory plots...")
-fig, axes = plt.subplots(1, 3, figsize=(14, 4), sharey=True, constrained_layout=True)
-
-for idx, n_hops in enumerate([3, 4, 5]):
-    ax = axes[idx]
-
-    for model_name, binary_data, color in [
-        ('Verbal CoT', data['verbal_binary'], COLORS["verbal"]),
-        ('Coconut', data['coconut_binary'], COLORS["coconut"])
-    ]:
-        steps, accs, errs_low, errs_high = [], [], [], []
-
-        for r in binary_data:
-            if r.get('n_hops') == n_hops and r.get('step', 0) < n_hops:
-                acc = r.get('acc_at_1') or r.get('mean')
-
-                if acc is not None and not np.isnan(acc):
-                    steps.append(r['step'])
-                    accs.append(acc)
-
-                    n = r.get('n', 10)
-                    se = np.sqrt(acc * (1 - acc) / max(n, 1))
-                    errs_low.append(acc - 1.96 * se)
-                    errs_high.append(acc + 1.96 * se)
-
-        if steps:
-            order = np.argsort(steps)
-            steps = np.array(steps)[order]
-            accs = np.array(accs)[order]
-            errs_low = np.array(errs_low)[order]
-            errs_high = np.array(errs_high)[order]
-
-            ax.plot(
-                steps, accs,
-                marker='o',
-                markersize=6,
-                linewidth=2,
-                color=color,
-                label=model_name
-            )
-
-            ax.fill_between(steps, errs_low, errs_high, alpha=0.15, color=color)
-
-    ax.axhline(0.091, linestyle='--', color='gray', alpha=0.5, linewidth=1)
-    ax.set_title(f"{n_hops}-Hop Problems", fontweight='semibold')
-    ax.set_xlabel("Reasoning Step")
-    ax.set_xticks(range(n_hops))
-    ax.set_ylim(0.4, 1.05)
-    clean_axis(ax)
-
-axes[0].set_ylabel("Accuracy@1")
-
-fig.legend(loc="lower center", ncol=2, frameon=False)
-plt.suptitle("Step-Level Faithfulness Trajectories", fontweight='semibold')
-plt.savefig("figures/faithfulness_trajectories.png", bbox_inches='tight')
-plt.savefig("figures/faithfulness_trajectories.pdf", bbox_inches='tight')
-plt.close()
-print("  -> Saved figures/faithfulness_trajectories.png/pdf")
+def plot_binary_matrices(data):
+    """Plot side-by-side heatmaps of binary probe matrices."""
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    
+    for idx, model in enumerate(["verbal_cot", "coconut"]):
+        matrix = data.get(f"{model}_matrix")
+        pvalues = data.get(f"{model}_pvalues")
+        
+        if matrix is None:
+            print(f"  Warning: No matrix for {model}")
+            continue
+        
+        # Create mask for non-significant cells
+        mask = (pvalues > 0.05) if pvalues is not None else None
+        
+        # Handle NaN values
+        matrix_clean = np.nan_to_num(matrix, nan=0.5)
+        
+        sns.heatmap(
+            matrix_clean, 
+            ax=axes[idx],
+            annot=True, 
+            fmt='.2f',
+            cmap='RdYlGn',
+            vmin=0.5, 
+            vmax=1.0,
+            mask=mask,
+            cbar_kws={'label': 'Accuracy'}
+        )
+        axes[idx].set_title(f'{model.replace("_", " ").title()}\nBinary Probe Accuracy')
+        axes[idx].set_xlabel('Target Step')
+        axes[idx].set_ylabel('Source Step')
+    
+    plt.tight_layout()
+    output_path = f"{FIGURES_DIR}/binary_probe_heatmaps.png"
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"  Saved heatmap to {output_path}")
+    plt.close()
 
 
-# Figure 3: Progress aggregation
-print("\n[4/5] Generating progress aggregation plot...")
-fig, ax = plt.subplots(figsize=(8, 5), constrained_layout=True)
-
-stages = ['early', 'middle', 'late']
-x = np.arange(len(stages))
-width = 0.35
-
-verbal_means, verbal_errors = [], []
-coconut_means, coconut_errors = [], []
-
-for stage in stages:
-    v = data['verbal_progress'][stage]
-    c = data['coconut_progress'][stage]
-
-    v_mean = v.get('mean', 0)
-    c_mean = c.get('mean', 0)
-
-    v_ci = v.get('ci_high', v_mean) - v_mean
-    c_ci = c.get('ci_high', c_mean) - c_mean
-
-    verbal_means.append(v_mean)
-    verbal_errors.append(v_ci)
-    coconut_means.append(c_mean)
-    coconut_errors.append(c_ci)
-
-bars1 = ax.bar(x - width/2, verbal_means, width,
-               color=COLORS["verbal"], alpha=0.8,
-               label='Verbal CoT',
-               yerr=verbal_errors, capsize=4)
-
-bars2 = ax.bar(x + width/2, coconut_means, width,
-               color=COLORS["coconut"], alpha=0.8,
-               label='Coconut',
-               yerr=coconut_errors, capsize=4)
-
-for bar, val in zip(bars1, verbal_means):
-    ax.text(bar.get_x() + bar.get_width()/2, val + 0.01,
-            f'{val:.2f}', ha='center', fontsize=8)
-
-for bar, val in zip(bars2, coconut_means):
-    ax.text(bar.get_x() + bar.get_width()/2, val + 0.01,
-            f'{val:.2f}', ha='center', fontsize=8)
-
-ax.set_xticks(x)
-ax.set_xticklabels([
-    'Early\n(<0.33)',
-    'Middle\n(0.33-0.66)',
-    'Late\n(>0.66)'
-])
-
-ax.set_ylabel("Balanced Accuracy")
-ax.set_title("Progress-Based Aggregation", fontweight='semibold')
-ax.set_ylim(0, 0.4)
-
-clean_axis(ax)
-ax.legend(frameon=False)
-
-plt.savefig("figures/progress_aggregation.png", bbox_inches='tight')
-plt.savefig("figures/progress_aggregation.pdf", bbox_inches='tight')
-plt.close()
-print("  -> Saved figures/progress_aggregation.png/pdf")
-
-
-# Figure 4: Diagonal vs off-diagonal
-print("\n[5/5] Generating diagonal vs off-diagonal box plots...")
-fig, axes = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
-
-for idx, (model_name, matrix, color) in enumerate([
-    ('Verbal CoT', data['verbal_matrix'], COLORS["verbal"]),
-    ('Coconut', data['coconut_matrix'], COLORS["coconut"])
-]):
-    ax = axes[idx]
-
-    diag_vals, off_vals = [], []
-    n = matrix.shape[0]
-
-    for i in range(n):
-        for j in range(n):
-            if not np.isnan(matrix[i, j]):
-                if i == j:
-                    diag_vals.append(matrix[i, j])
+def plot_progress_comparison(data):
+    """Plot progress probe accuracy comparison."""
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    x_labels = []
+    verbal_accs = []
+    verbal_cis = []
+    coconut_accs = []
+    coconut_cis = []
+    
+    for model, color in [("verbal_cot", "blue"), ("coconut", "orange")]:
+        progress = data.get(f"{model}_progress")
+        if progress:
+            for stage in sorted(progress.keys()):
+                if stage not in x_labels:
+                    x_labels.append(stage)
+                
+                res = progress[stage]
+                acc = res.get('mean', float('nan'))
+                ci_high = res.get('ci_high', float('nan'))
+                
+                # Calculate error bar
+                error = ci_high - acc if not np.isnan(ci_high) else 0
+                
+                if model == "verbal_cot":
+                    verbal_accs.append(acc)
+                    verbal_cis.append(error)
                 else:
-                    off_vals.append(matrix[i, j])
+                    coconut_accs.append(acc)
+                    coconut_cis.append(error)
+    
+    if not x_labels:
+        print("  Warning: No progress data to plot")
+        return
+    
+    x = np.arange(len(x_labels))
+    width = 0.35
+    
+    ax.bar(x - width/2, verbal_accs, width, label='Verbal CoT', 
+           color='blue', alpha=0.7, yerr=verbal_cis, capsize=5)
+    ax.bar(x + width/2, coconut_accs, width, label='Coconut', 
+           color='orange', alpha=0.7, yerr=coconut_cis, capsize=5)
+    
+    ax.set_ylabel('Probe Accuracy')
+    ax.set_xlabel('Progress Stage')
+    ax.set_title('Progress Probe: Verbal CoT vs Coconut')
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels, rotation=45, ha='right')
+    ax.axhline(y=0.5, color='gray', linestyle='--', label='Chance (0.5)')
+    ax.legend()
+    ax.set_ylim(0, 1)
+    
+    plt.tight_layout()
+    output_path = f"{FIGURES_DIR}/progress_probe_comparison.png"
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"  Saved comparison to {output_path}")
+    plt.close()
 
-    bp = ax.boxplot([diag_vals, off_vals],
-                    patch_artist=True,
-                    widths=0.5)
 
-    for patch in bp['boxes']:
+def plot_diagonal_comparison(data):
+    """Plot diagonal accuracies comparison using box plots."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+    
+    models_data = {}
+    labels = []
+    data_list = []
+    
+    for model in ["verbal_cot", "coconut"]:
+        matrix = data.get(f"{model}_matrix")
+        if matrix is not None:
+            diag = np.diag(matrix)
+            diag_clean = diag[~np.isnan(diag)]
+            if len(diag_clean) > 0:
+                models_data[model] = diag_clean
+                labels.append(model.replace("_", " ").title())
+                data_list.append(diag_clean)
+    
+    if not data_list:
+        print("  Warning: No diagonal data to plot")
+        return
+    
+    # Boxplot
+    bp = ax.boxplot(
+        data_list,
+        labels=labels,
+        patch_artist=True,
+        showfliers=False
+    )
+    
+    # Color the boxes
+    colors = ["#4C78A8", "#F58518"]
+    for patch, color in zip(bp['boxes'], colors):
         patch.set_facecolor(color)
-        patch.set_alpha(0.7)
+        patch.set_alpha(0.6)
+    
+    # Overlay jittered points
+    for i, accs in enumerate(data_list):
+        x_jitter = np.random.normal(i + 1, 0.04, len(accs))
+        ax.scatter(x_jitter, accs, alpha=0.5, s=30, color='black')
+    
+    ax.set_ylabel('Diagonal Probe Accuracy')
+    ax.set_title('Step-Specific Probe Accuracy\n(Step i representation → Step i conclusion)')
+    ax.axhline(y=0.5, color='gray', linestyle='--', label='Chance')
+    ax.set_ylim(0.4, 1.05)
+    ax.legend(loc='lower right')
+    
+    plt.tight_layout()
+    output_path = f"{FIGURES_DIR}/diagonal_accuracy_comparison.png"
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"  Saved diagonal comparison to {output_path}")
+    plt.close()
 
-    ax.set_xticks([1, 2])
-    ax.set_xticklabels(["Diagonal", "Off-diagonal"])
-    ax.set_title(model_name, fontweight='semibold')
 
-    if diag_vals:
-        ax.text(1, 1.02, f"mu={np.mean(diag_vals):.2f}", ha='center', fontsize=9)
-    if off_vals:
-        ax.text(2, 1.02, f"mu={np.mean(off_vals):.2f}", ha='center', fontsize=9)
+def plot_cross_step_curves(data):
+    """Plot how probe accuracy decays when probing step j from step i."""
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    
+    for idx, model in enumerate(["verbal_cot", "coconut"]):
+        matrix = data.get(f"{model}_matrix")
+        
+        if matrix is None:
+            continue
+        
+        n_steps = matrix.shape[0]
+        
+        for source_step in range(min(n_steps, 5)):
+            row = matrix[source_step, :]
+            mask = ~np.isnan(row)
+            if np.any(mask):
+                x = np.arange(len(row))[mask]
+                y = row[mask]
+                axes[idx].plot(x, y, marker='o', label=f'Source step {source_step}')
+        
+        axes[idx].set_xlabel('Target Step')
+        axes[idx].set_ylabel('Probe Accuracy')
+        axes[idx].set_title(f'{model.replace("_", " ").title()}\nCross-Step Probing')
+        axes[idx].axhline(y=0.5, color='gray', linestyle='--', alpha=0.5)
+        axes[idx].legend()
+        axes[idx].set_ylim(0.4, 1.05)
+    
+    plt.tight_layout()
+    output_path = f"{FIGURES_DIR}/cross_step_curves.png"
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"  Saved cross-step curves to {output_path}")
+    plt.close()
 
-    ax.set_ylim(0.3, 1.1)
-    clean_axis(ax)
 
-plt.suptitle("Diagonal vs Off-Diagonal Accuracy", fontweight='semibold')
-plt.savefig("figures/diag_vs_offdiag.png", bbox_inches='tight')
-plt.savefig("figures/diag_vs_offdiag.pdf", bbox_inches='tight')
-plt.close()
-print("  -> Saved figures/diag_vs_offdiag.png/pdf")
+def print_summary(data):
+    """Print summary statistics."""
+    print("\n" + "="*60)
+    print("PROBE ANALYSIS SUMMARY")
+    print("="*60)
+    
+    print("\nDiagonal Accuracies (Step i -> Step i):")
+    for model in ["verbal_cot", "coconut"]:
+        matrix = data.get(f"{model}_matrix")
+        if matrix is not None:
+            diag = np.diag(matrix)
+            diag_clean = diag[~np.isnan(diag)]
+            if len(diag_clean) > 0:
+                print(f"  {model.replace('_', ' ').title()}:")
+                print(f"    Values: {[f'{x:.3f}' for x in diag_clean]}")
+                print(f"    Mean: {np.mean(diag_clean):.3f} +/- {np.std(diag_clean):.3f}")
+    
+    stats = data.get("stats")
+    if stats:
+        print(f"\nStatistical Comparison (n={stats.get('n_pairs', 0)} pairs):")
+        print(f"  Verbal CoT: {stats.get('verbal_mean', 0):.3f} +/- {stats.get('verbal_std', 0):.3f}")
+        print(f"  Coconut:    {stats.get('coconut_mean', 0):.3f} +/- {stats.get('coconut_std', 0):.3f}")
+        print(f"  Difference: {stats.get('difference', 0):+.3f}")
+        print(f"  Paired t-test: t={stats.get('ttest_statistic', 0):.3f}, p={stats.get('ttest_p', 1):.4f}")
+        print(f"  Wilcoxon: W={stats.get('wilcoxon_statistic', 0):.1f}, p={stats.get('wilcoxon_p', 1):.4f}")
+        
+        print("\nInterpretation:")
+        if stats.get('ttest_p', 1) < 0.05:
+            if stats.get('difference', 0) > 0:
+                print(f"  [SIG] Coconut significantly MORE faithful (p={stats['ttest_p']:.4f})")
+            else:
+                print(f"  [SIG] Verbal CoT significantly MORE faithful (p={stats['ttest_p']:.4f})")
+        else:
+            print(f"  [NS] No significant difference in faithfulness (p={stats['ttest_p']:.4f})")
+
+
+if __name__ == "__main__":
+    print("="*60)
+    print("ANALYZING PROBE RESULTS")
+    print("="*60)
+    
+    if not Path("results/probing").exists():
+        print("\nERROR: No probe results found!")
+        print("Run train_probes.py first:")
+        print("  python scripts/probing/train_probes.py")
+        sys.exit(1)
+    
+    print(f"\n[1/5] Loading data from {RESULTS_DIR}/...")
+    data = load_all_results()
+    
+    if not data:
+        print("No data loaded!")
+        sys.exit(1)
+    
+    print(f"\n  Loaded {len(data)} result files")
+    
+    print(f"\n[2/5] Creating binary probe heatmaps...")
+    plot_binary_matrices(data)
+    
+    print(f"\n[3/5] Creating progress comparison plot...")
+    plot_progress_comparison(data)
+    
+    print(f"\n[4/5] Creating diagonal and cross-step plots...")
+    plot_diagonal_comparison(data)
+    plot_cross_step_curves(data)
+    
+    print(f"\n[5/5] Generating summary...")
+    print_summary(data)
+    
+    print("\n" + "="*60)
+    print("ANALYSIS COMPLETE")
+    print("="*60)
+    print(f"\nFigures saved to {FIGURES_DIR}/")
+    print(f"  - binary_probe_heatmaps.png")
+    print(f"  - progress_probe_comparison.png")
+    print(f"  - diagonal_accuracy_comparison.png")
+    print(f"  - cross_step_curves.png")
