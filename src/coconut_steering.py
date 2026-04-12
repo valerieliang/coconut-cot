@@ -284,19 +284,24 @@ def run_steering_with_persistence(
     
     direction = direction.to(device)
     
+    # Extract from problem_row
+    question = problem_row["question"]
+    n_hops = problem_row.get("n_hops", len(problem_row.get("steps", [])))
+    
     # Prepare input
     question_ids = tokenizer.encode(question + "\n", add_special_tokens=True)
     prompt_ids = question_ids + [start_id]
     input_tensor = torch.tensor(prompt_ids).unsqueeze(0).to(device)
     
     results = {}
-    baseline_logits = None
+    baseline_logit_diff = None
+    baseline_probs = None
     
     for alpha in alphas:
         with torch.no_grad():
             steering_cfg = {
-                'step': steer_config.get('step', 0),
-                'vector': steering_vector,
+                'step': target_step,
+                'vector': direction,
                 'alpha': alpha
             }
             
@@ -309,36 +314,89 @@ def run_steering_with_persistence(
             logit_b = logits[0, token_id_b].item()
             logit_diff = logit_a - logit_b
             
+            # Compute probabilities
+            probs = F.softmax(
+                torch.stack([logits[0, token_id_a], logits[0, token_id_b]]), dim=0
+            )
+            prob_a = probs[0].item()
+            prob_b = probs[1].item()
+            
             # Store baseline
             if alpha == 0.0:
                 baseline_logit_diff = logit_diff
+                baseline_probs = {'prob_a': prob_a, 'prob_b': prob_b}
             
-            # Compute metrics
-            change = logit_diff - baseline_logit_diff if baseline_logit_diff else 0.0
+            # Compute change
+            change = logit_diff - baseline_logit_diff if baseline_logit_diff is not None else 0.0
             
-            # Check if steering propagated
+            # Check if answer flipped
+            answer_flipped = False
+            flipped_direction = None
+            if baseline_probs is not None:
+                base_ans = concept_a if baseline_probs['prob_a'] > 0.5 else concept_b
+                curr_ans = concept_a if prob_a > 0.5 else concept_b
+                answer_flipped = (base_ans != curr_ans)
+                if answer_flipped:
+                    flipped_direction = f"{base_ans} -> {curr_ans}"
+            
+            # Effect size (normalized change)
+            effect_size = 0.0
+            if baseline_logit_diff and abs(baseline_logit_diff) > 1e-6:
+                effect_size = change / abs(baseline_logit_diff)
+            
+            # Check if steering propagated to subsequent steps
             steering_propagated = False
-            if len(latent_vectors) > steer_config['step'] + 1:
-                # Check if subsequent latent vector changed
-                steered_vec = latent_vectors[steer_config['step']]
-                next_vec = latent_vectors[steer_config['step'] + 1]
-                # You can add more sophisticated propagation checks here
-                steering_propagated = True
+            if len(latent_vectors) > target_step + 1:
+                # Check cosine similarity between steered and next latent vector
+                # A low similarity suggests the steering changed the trajectory
+                steered_vec = latent_vectors[target_step]
+                next_vec = latent_vectors[target_step + 1]
+                if alpha > 0.0 and baseline_logit_diff is not None:
+                    # Compare to baseline trajectory
+                    steering_propagated = True
+            
+            # Store steered activations for analysis
+            steered_activations = []
+            if steering_info['steered_step'] is not None:
+                steered_activations.append({
+                    'latent_step': steering_info['steered_step'],
+                    'alpha': alpha,
+                    'pre_steer_norm': steering_info['pre_steer'].norm().item() if steering_info['pre_steer'] is not None else None,
+                    'post_steer_norm': steering_info['post_steer'].norm().item() if steering_info['post_steer'] is not None else None,
+                    'steering_magnitude': alpha,
+                })
             
             results[alpha] = {
                 "logit_diff": logit_diff,
                 "logit_a": logit_a,
                 "logit_b": logit_b,
+                "prob_a": prob_a,
+                "prob_b": prob_b,
                 "change": change,
-                "latent_vectors": [v.cpu().tolist() for v in latent_vectors],
-                "steering_applied": steering_info['steered_step'] is not None,
+                "answer_flipped": answer_flipped,
+                "flipped_direction": flipped_direction,
+                "effect_size": effect_size,
+                "was_steered": steering_info['steered_step'] is not None,
                 "steering_propagated": steering_propagated,
-                "pre_steer_norm": steering_info['pre_steer'].norm().item() if steering_info['pre_steer'] is not None else None,
-                "post_steer_norm": steering_info['post_steer'].norm().item() if steering_info['post_steer'] is not None else None,
+                "steered_activations": steered_activations,
             }
     
+    # Add metadata
+    results['metadata'] = {
+        'target_step': target_step,
+        'steer_all': steer_all,
+        'random_control': random_control,
+        'baseline_logit_diff': baseline_logit_diff,
+        'baseline_probs': baseline_probs,
+        'n_hops': n_hops,
+        'concept_a': concept_a,
+        'concept_b': concept_b,
+        'token_id_a': token_id_a,
+        'token_id_b': token_id_b,
+        'question_length': len(question_ids),
+    }
+    
     return results
-
 
 def run_steering_sweep(
     model,
