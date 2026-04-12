@@ -188,6 +188,51 @@ def load_model_safe(model_type: str, checkpoint_path: str, device: str):
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
+def construct_semantic_steering_vector(model, tokenizer, concept_a, concept_b, device="cuda"):
+    """
+    Construct a steering vector that is semantically aligned with the model's latent space.
+    Uses the model's OWN representations rather than static embeddings.
+    """
+    # Get the model's internal representation of each concept
+    # by running them through the model with a neutral context
+    
+    neutral_context = "The concept of"
+    
+    # Get representation for concept A
+    text_a = f"{neutral_context} {concept_a}"
+    inputs_a = tokenizer(text_a, return_tensors="pt").to(device)
+    
+    with torch.no_grad():
+        if hasattr(model, 'base_causallm'):
+            outputs_a = model.base_causallm(**inputs_a, output_hidden_states=True)
+        else:
+            outputs_a = model(**inputs_a, output_hidden_states=True)
+    
+    # Use last layer hidden state at the concept token
+    hidden_a = outputs_a.hidden_states[-1][0, -1, :]
+    
+    # Get representation for concept B
+    text_b = f"{neutral_context} {concept_b}"
+    inputs_b = tokenizer(text_b, return_tensors="pt").to(device)
+    
+    with torch.no_grad():
+        if hasattr(model, 'base_causallm'):
+            outputs_b = model.base_causallm(**inputs_b, output_hidden_states=True)
+        else:
+            outputs_b = model(**inputs_b, output_hidden_states=True)
+    
+    hidden_b = outputs_b.hidden_states[-1][0, -1, :]
+    
+    # Direction from B to A
+    direction = hidden_a - hidden_b
+    direction = direction / torch.norm(direction)
+    
+    # Check alignment with latent space
+    cos_sim = torch.dot(hidden_a / torch.norm(hidden_a), hidden_b / torch.norm(hidden_b)).item()
+    print(f"  Semantic steering: cos({concept_a}, {concept_b}) = {cos_sim:.4f}")
+    
+    return direction.cpu()
+
 
 def main():
     args = parse_args()
@@ -403,14 +448,7 @@ def main():
     for model_type in models_loaded.keys():
         model_results = [r for r in all_results["results"] if r["model_type"] == model_type]
         print(f"  {model_type}: {len(model_results)} results")
-        
-        # Check propagation for Coconut
-        if model_type == "coconut":
-            propagated = sum(1 for r in model_results if r.get("steering_propagated", False))
-            if propagated > 0:
-                print(f"    Steering propagated: {propagated}/{len(model_results)} problems")
-            else:
-                print(f"    WARNING: Steering did not propagate in any problem!")
+
 
 
 if __name__ == "__main__":
