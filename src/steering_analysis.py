@@ -5,6 +5,7 @@ and comparative metrics between Coconut and Verbal CoT.
 """
 
 import json
+import os
 import numpy as np
 import torch
 from scipy import stats
@@ -15,37 +16,73 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def compute_normalized_effect(results_dict: Dict, baseline_logit_diff: float, 
-                              token_logit_std: Optional[float] = None, 
+# ---------------------------------------------------------------------------
+# Key-coercion helpers
+# ---------------------------------------------------------------------------
+# BUG FIX: save_steering_results serialises all dict keys through str(), so
+# float alpha keys (0.0, 1.0 ...) become strings ("0.0", "1.0" ...) in JSON.
+# Every analysis function that looks up result[0.0] or filters
+# `isinstance(a, float)` breaks silently on loaded data.
+# The helpers below normalise keys so the rest of the code is transparent to
+# whether results came from memory or disk.
+
+def _alpha_keys(results: Dict) -> List[float]:
+    """Return sorted float alpha keys from a results dict (handles str keys)."""
+    alphas = []
+    for k in results.keys():
+        if isinstance(k, (int, float)):
+            alphas.append(float(k))
+        elif isinstance(k, str):
+            try:
+                alphas.append(float(k))
+            except ValueError:
+                pass
+    return sorted(alphas)
+
+
+def _get_alpha(results: Dict, alpha: float):
+    """Get a per-alpha result, trying both float and string key."""
+    v = results.get(alpha)
+    if v is None:
+        v = results.get(str(alpha))
+    return v
+
+
+# ---------------------------------------------------------------------------
+# Analysis functions
+# ---------------------------------------------------------------------------
+
+def compute_normalized_effect(results_dict: Dict, baseline_logit_diff: float,
+                              token_logit_std: Optional[float] = None,
                               n_samples: int = 10) -> Dict:
     """
     Compute normalized effect size.
-    
+
     Options:
-    1. Cohen's d: (steered - baseline) / pooled_std
-    2. Percent change: (steered - baseline) / |baseline|
-    3. Std-normalized: (steered - baseline) / baseline_std
+    1. Percent change: (steered - baseline) / |baseline|
+    2. Std-normalized: (steered - baseline) / baseline_std
     """
     effects = {}
-    
-    for alpha, res in results_dict.items():
-        if alpha == 0.0 or not isinstance(alpha, float):
+
+    for alpha in _alpha_keys(results_dict):
+        if alpha == 0.0:
             continue
-            
+        res = _get_alpha(results_dict, alpha)
+        if res is None:
+            continue
+
         raw_change = res.get("change", 0)
-        
-        # Option 1: Normalize by baseline magnitude
+
         if abs(baseline_logit_diff) > 1e-6:
             percent_change = raw_change / abs(baseline_logit_diff)
         else:
             percent_change = raw_change
-        
-        # Option 2: Normalize by token-level variance (if available)
+
         if token_logit_std is not None and token_logit_std > 0:
             std_normalized = raw_change / token_logit_std
         else:
             std_normalized = raw_change
-        
+
         effects[alpha] = {
             "raw_change": raw_change,
             "percent_change": percent_change,
@@ -55,42 +92,29 @@ def compute_normalized_effect(results_dict: Dict, baseline_logit_diff: float,
             "answer_flipped": res.get("answer_flipped", False),
             "effect_size": res.get("effect_size", 0.0),
         }
-    
+
     return effects
 
 
 def compute_flip_metrics(sweep_results: Dict, alpha_threshold: float = 5.0) -> Dict:
     """
     Compute logical flip rates and effect sizes across a sweep.
-    
-    Args:
-        sweep_results: Results from run_steering_sweep or run_verbal_steering_sweep
-        alpha_threshold: Alpha value to use for flip rate calculation
-    
-    Returns:
-        Dictionary with flip metrics per configuration
     """
     metrics = {}
-    
+
     for config_name, results in sweep_results.items():
         if results is None:
             continue
-        
-        # Find result closest to alpha_threshold
-        alphas = [a for a in results.keys() if isinstance(a, float)]
-        alphas.sort()
-        
+
+        alphas = _alpha_keys(results)
         if not alphas:
             continue
-        
-        # Get closest alpha
+
         closest_alpha = min(alphas, key=lambda x: abs(x - alpha_threshold))
-        result_at_alpha = results[closest_alpha]
-        
-        # Extract baseline
-        baseline = results.get(0.0, None)
-        
-        if baseline:
+        result_at_alpha = _get_alpha(results, closest_alpha)
+        baseline = _get_alpha(results, 0.0)
+
+        if baseline and result_at_alpha:
             metrics[config_name] = {
                 'flipped': result_at_alpha.get('answer_flipped', False),
                 'flipped_direction': result_at_alpha.get('flipped_direction'),
@@ -103,52 +127,44 @@ def compute_flip_metrics(sweep_results: Dict, alpha_threshold: float = 5.0) -> D
                 'steered_logit_diff': result_at_alpha.get('logit_diff', 0),
                 'was_steered': result_at_alpha.get('was_steered', False),
             }
-    
+
     return metrics
 
 
 def compute_dose_response_curve(
-    results: Dict, 
+    results: Dict,
     normalize: bool = True
 ) -> Dict:
-    """
-    Extract dose-response curve from steering results.
-    
-    Args:
-        results: Results dictionary from steering experiment
-        normalize: Whether to normalize by baseline
-    
-    Returns:
-        Dictionary with alphas, changes, probs, and flip status
-    """
+    """Extract dose-response curve from steering results."""
     alphas = []
     changes = []
     probs = []
     logit_diffs = []
     flipped = []
-    
+
     baseline_logit_diff = None
     baseline_prob = None
-    
-    for alpha, res in sorted(results.items()):
-        if not isinstance(alpha, float):
+
+    for alpha in _alpha_keys(results):
+        res = _get_alpha(results, alpha)
+        if res is None:
             continue
-        
+
         if alpha == 0.0:
             baseline_logit_diff = res.get('logit_diff', 0)
             baseline_prob = res.get('prob_a', 0.5)
-        
+
         alphas.append(alpha)
         changes.append(res.get('change', 0))
         probs.append(res.get('prob_a', 0.5))
         logit_diffs.append(res.get('logit_diff', 0))
         flipped.append(res.get('answer_flipped', False))
-    
+
     if normalize and baseline_logit_diff and abs(baseline_logit_diff) > 1e-6:
         normalized_changes = [c / abs(baseline_logit_diff) for c in changes]
     else:
         normalized_changes = changes
-    
+
     return {
         'alphas': alphas,
         'changes': changes,
@@ -166,20 +182,10 @@ def compare_coconut_vs_verbal(
     verbal_sweep: Dict,
     alpha_threshold: float = 5.0
 ) -> Dict:
-    """
-    Compare steering efficacy between Coconut and Verbal CoT.
-    
-    Args:
-        coconut_sweep: Sweep results from Coconut model
-        verbal_sweep: Sweep results from Verbal CoT model
-        alpha_threshold: Alpha value for comparison
-    
-    Returns:
-        Comparison metrics
-    """
+    """Compare steering efficacy between Coconut and Verbal CoT."""
     coconut_metrics = compute_flip_metrics(coconut_sweep, alpha_threshold)
     verbal_metrics = compute_flip_metrics(verbal_sweep, alpha_threshold)
-    
+
     comparison = {
         'coconut': {
             'flip_rate': sum(1 for m in coconut_metrics.values() if m['flipped']) / len(coconut_metrics) if coconut_metrics else 0,
@@ -192,97 +198,95 @@ def compare_coconut_vs_verbal(
             'mean_prob_shift': np.mean([abs(m['prob_shift']) for m in verbal_metrics.values()]) if verbal_metrics else 0,
         }
     }
-    
-    # Compute ratios (Coconut / Verbal)
+
     if comparison['verbal']['flip_rate'] > 0:
         comparison['flip_rate_ratio'] = comparison['coconut']['flip_rate'] / comparison['verbal']['flip_rate']
     else:
         comparison['flip_rate_ratio'] = float('inf') if comparison['coconut']['flip_rate'] > 0 else 1.0
-    
+
     if comparison['verbal']['mean_effect_size'] != 0:
         comparison['effect_size_ratio'] = comparison['coconut']['mean_effect_size'] / comparison['verbal']['mean_effect_size']
     else:
         comparison['effect_size_ratio'] = float('inf')
-    
+
     comparison['bottleneck_supported'] = comparison['coconut']['flip_rate'] > comparison['verbal']['flip_rate']
-    comparison['separation_supported'] = comparison['effect_size_ratio'] > 1.5  # Coconut effect > 1.5x Verbal effect
-    
+    comparison['separation_supported'] = comparison['effect_size_ratio'] > 1.5
+
     return comparison
 
 
 def visualize_steering_sweep(
-    sweep_results: Dict, 
+    sweep_results: Dict,
     save_path: Optional[str] = None,
     title_prefix: str = "",
     alpha: float = 5.0
 ) -> None:
     """
     Create visualization of steering sweep results.
-    
+
     Shows:
-        - Heatmap of effect sizes (step × layer) if both dimensions present
+        - Heatmap of effect sizes (step x layer) if both dimensions present
         - Dose-response curves for each configuration
         - Flip rate by intervention point
     """
-    # Extract effect sizes at specified alpha
     configs = list(sweep_results.keys())
-    
+
     if not configs:
         print("No results to visualize")
         return
-    
-    # Determine sweep type from keys
+
     has_step = any('step' in c and 'layer' not in c for c in configs)
     has_layer = any('layer' in c for c in configs)
     has_both = any('step' in c and 'layer' in c for c in configs)
-    
+
     if has_both:
-        # Parse step and layer from config names
         steps = set()
         layers = set()
         effect_matrix = {}
-        
+
         for config_name, results in sweep_results.items():
-            if results and alpha in results:
+            res_at_alpha = _get_alpha(results, alpha) if results else None
+            if res_at_alpha:
                 parts = config_name.split('_')
                 step = int(parts[0].replace('step', ''))
                 layer = int(parts[1].replace('layer', ''))
                 steps.add(step)
                 layers.add(layer)
-                effect_matrix[(step, layer)] = results[alpha].get('effect_size', 0)
-        
+                effect_matrix[(step, layer)] = res_at_alpha.get('effect_size', 0)
+
         steps = sorted(steps)
         layers = sorted(layers)
-        
-        # Create heatmap
+
         matrix = np.zeros((len(steps), len(layers)))
         for i, step in enumerate(steps):
             for j, layer in enumerate(layers):
                 matrix[i, j] = effect_matrix.get((step, layer), 0)
-        
+
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-        
-        # Heatmap
-        im = axes[0].imshow(matrix, cmap='RdBu_r', aspect='auto', vmin=-abs(matrix).max(), vmax=abs(matrix).max())
+
+        im = axes[0].imshow(matrix, cmap='RdBu_r', aspect='auto',
+                            vmin=-abs(matrix).max(), vmax=abs(matrix).max())
         axes[0].set_xticks(range(len(layers)))
         axes[0].set_xticklabels(layers)
         axes[0].set_yticks(range(len(steps)))
         axes[0].set_yticklabels(steps)
         axes[0].set_xlabel('Layer')
         axes[0].set_ylabel('Step')
-        axes[0].set_title(f'{title_prefix}Effect Size by Step × Layer (α={alpha})')
+        # ASCII: 'x' instead of multiplication sign
+        axes[0].set_title(f'{title_prefix}Effect Size by Step x Layer (alpha={alpha})')
         plt.colorbar(im, ax=axes[0])
-        
-        # Flip rate summary
+
         flip_rates = []
         for step in steps:
             step_flips = []
             for layer in layers:
                 if (step, layer) in effect_matrix:
-                    res_at_alpha = sweep_results.get(f'step{step}_layer{layer}', {}).get(alpha, {})
+                    res_at_alpha = _get_alpha(
+                        sweep_results.get(f'step{step}_layer{layer}', {}), alpha
+                    ) or {}
                     step_flips.append(1.0 if res_at_alpha.get('answer_flipped', False) else 0.0)
             flip_rates.append(np.mean(step_flips) if step_flips else 0)
-        
+
         axes[1].bar(range(len(steps)), flip_rates)
         axes[1].set_xticks(range(len(steps)))
         axes[1].set_xticklabels(steps)
@@ -290,95 +294,98 @@ def visualize_steering_sweep(
         axes[1].set_ylabel('Flip Rate')
         axes[1].set_title(f'{title_prefix}Logical Flip Rate by Step')
         axes[1].set_ylim(0, 1)
-        
+
         plt.tight_layout()
-        
+
     elif has_step:
-        # Step sweep
         steps = []
         effect_sizes = []
         flip_rates = []
         prob_shifts = []
-        
+
         for config_name, results in sweep_results.items():
-            if results and alpha in results:
+            res_at_alpha = _get_alpha(results, alpha) if results else None
+            baseline = _get_alpha(results, 0.0) if results else None
+            if res_at_alpha:
                 step = int(config_name.split('_')[1])
                 steps.append(step)
-                effect_sizes.append(results[alpha].get('effect_size', 0))
-                flip_rates.append(1.0 if results[alpha].get('answer_flipped', False) else 0.0)
-                if 0.0 in results:
-                    prob_shifts.append(results[alpha]['prob_a'] - results[0.0]['prob_a'])
+                effect_sizes.append(res_at_alpha.get('effect_size', 0))
+                flip_rates.append(1.0 if res_at_alpha.get('answer_flipped', False) else 0.0)
+                if baseline:
+                    prob_shifts.append(res_at_alpha['prob_a'] - baseline['prob_a'])
                 else:
                     prob_shifts.append(0)
-        
-        # Sort by step
+
         sorted_indices = np.argsort(steps)
         steps = np.array(steps)[sorted_indices]
         effect_sizes = np.array(effect_sizes)[sorted_indices]
         flip_rates = np.array(flip_rates)[sorted_indices]
         prob_shifts = np.array(prob_shifts)[sorted_indices]
-        
+
         fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-        
-        axes[0].bar(steps, effect_sizes, color=['red' if es < 0 else 'blue' for es in effect_sizes])
+
+        axes[0].bar(steps, effect_sizes,
+                    color=['red' if es < 0 else 'blue' for es in effect_sizes])
         axes[0].axhline(y=0, color='black', linestyle='-', linewidth=0.5)
         axes[0].set_xlabel('Reasoning Step')
         axes[0].set_ylabel('Effect Size')
-        axes[0].set_title(f'{title_prefix}Steering Effect by Step (α={alpha})')
-        
+        axes[0].set_title(f'{title_prefix}Steering Effect by Step (alpha={alpha})')
+
         axes[1].bar(steps, flip_rates, color='green', alpha=0.7)
         axes[1].set_xlabel('Reasoning Step')
         axes[1].set_ylabel('Flip Rate')
         axes[1].set_title(f'{title_prefix}Logical Flip Rate by Step')
         axes[1].set_ylim(0, 1)
-        
-        axes[2].bar(steps, prob_shifts, color=['red' if ps < 0 else 'blue' for ps in prob_shifts])
+
+        axes[2].bar(steps, prob_shifts,
+                    color=['red' if ps < 0 else 'blue' for ps in prob_shifts])
         axes[2].axhline(y=0, color='black', linestyle='-', linewidth=0.5)
         axes[2].set_xlabel('Reasoning Step')
         axes[2].set_ylabel('Probability Shift')
         axes[2].set_title(f'{title_prefix}Probability Shift by Step')
-        
+
         plt.tight_layout()
-        
+
     elif has_layer:
-        # Layer sweep
         layers = []
         effect_sizes = []
         flip_rates = []
-        
+
         for config_name, results in sweep_results.items():
-            if results and alpha in results:
+            res_at_alpha = _get_alpha(results, alpha) if results else None
+            if res_at_alpha:
                 layer = int(config_name.split('_')[1])
                 layers.append(layer)
-                effect_sizes.append(results[alpha].get('effect_size', 0))
-                flip_rates.append(1.0 if results[alpha].get('answer_flipped', False) else 0.0)
-        
-        # Sort by layer
+                effect_sizes.append(res_at_alpha.get('effect_size', 0))
+                flip_rates.append(1.0 if res_at_alpha.get('answer_flipped', False) else 0.0)
+
         sorted_indices = np.argsort(layers)
         layers = np.array(layers)[sorted_indices]
         effect_sizes = np.array(effect_sizes)[sorted_indices]
         flip_rates = np.array(flip_rates)[sorted_indices]
-        
+
         fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-        
-        axes[0].bar(layers, effect_sizes, color=['red' if es < 0 else 'blue' for es in effect_sizes])
+
+        axes[0].bar(layers,
+                    effect_sizes,
+                    color=['red' if es < 0 else 'blue' for es in effect_sizes])
         axes[0].axhline(y=0, color='black', linestyle='-', linewidth=0.5)
         axes[0].set_xlabel('Transformer Layer')
         axes[0].set_ylabel('Effect Size')
-        axes[0].set_title(f'{title_prefix}Steering Effect by Layer (α={alpha})')
-        
+        axes[0].set_title(f'{title_prefix}Steering Effect by Layer (alpha={alpha})')
+
         axes[1].bar(layers, flip_rates, color='green', alpha=0.7)
         axes[1].set_xlabel('Transformer Layer')
         axes[1].set_ylabel('Flip Rate')
         axes[1].set_title(f'{title_prefix}Logical Flip Rate by Layer')
         axes[1].set_ylim(0, 1)
-        
+
         plt.tight_layout()
-    
+
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
         print(f"Figure saved to {save_path}")
-    
+
     plt.show()
 
 
@@ -387,57 +394,53 @@ def plot_dose_response_comparison(
     verbal_results: Dict,
     save_path: Optional[str] = None
 ) -> None:
-    """
-    Plot dose-response curves comparing Coconut and Verbal CoT.
-    """
+    """Plot dose-response curves comparing Coconut and Verbal CoT."""
     coconut_curve = compute_dose_response_curve(coconut_results)
     verbal_curve = compute_dose_response_curve(verbal_results)
-    
+
     fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-    
-    # Logit difference change
-    axes[0].plot(coconut_curve['alphas'], coconut_curve['changes'], 
+
+    axes[0].plot(coconut_curve['alphas'], coconut_curve['changes'],
                  'o-', label='Coconut', linewidth=2, markersize=8)
-    axes[0].plot(verbal_curve['alphas'], verbal_curve['changes'], 
+    axes[0].plot(verbal_curve['alphas'], verbal_curve['changes'],
                  's-', label='Verbal CoT', linewidth=2, markersize=8)
     axes[0].axhline(y=0, color='black', linestyle='--', linewidth=0.5)
-    axes[0].set_xlabel('Steering Multiplier (α)')
+    # ASCII: 'alpha' instead of the Greek letter
+    axes[0].set_xlabel('Steering Multiplier (alpha)')
     axes[0].set_ylabel('Change in Logit Difference')
     axes[0].set_title('Raw Effect Size')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
-    
-    # Normalized change
-    axes[1].plot(coconut_curve['alphas'], coconut_curve['normalized_changes'], 
+
+    axes[1].plot(coconut_curve['alphas'], coconut_curve['normalized_changes'],
                  'o-', label='Coconut', linewidth=2, markersize=8)
-    axes[1].plot(verbal_curve['alphas'], verbal_curve['normalized_changes'], 
+    axes[1].plot(verbal_curve['alphas'], verbal_curve['normalized_changes'],
                  's-', label='Verbal CoT', linewidth=2, markersize=8)
     axes[1].axhline(y=0, color='black', linestyle='--', linewidth=0.5)
-    axes[1].set_xlabel('Steering Multiplier (α)')
+    axes[1].set_xlabel('Steering Multiplier (alpha)')
     axes[1].set_ylabel('Normalized Change')
     axes[1].set_title('Normalized Effect Size')
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
-    
-    # Probability of concept A
-    axes[2].plot(coconut_curve['alphas'], coconut_curve['probs'], 
+
+    axes[2].plot(coconut_curve['alphas'], coconut_curve['probs'],
                  'o-', label='Coconut', linewidth=2, markersize=8)
-    axes[2].plot(verbal_curve['alphas'], verbal_curve['probs'], 
+    axes[2].plot(verbal_curve['alphas'], verbal_curve['probs'],
                  's-', label='Verbal CoT', linewidth=2, markersize=8)
     axes[2].axhline(y=0.5, color='gray', linestyle='--', linewidth=0.5, alpha=0.5)
-    axes[2].set_xlabel('Steering Multiplier (α)')
+    axes[2].set_xlabel('Steering Multiplier (alpha)')
     axes[2].set_ylabel('P(concept_a)')
     axes[2].set_title('Output Probability')
     axes[2].set_ylim(0, 1)
     axes[2].legend()
     axes[2].grid(True, alpha=0.3)
-    
+
     plt.tight_layout()
-    
+
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
         print(f"Figure saved to {save_path}")
-    
+
     plt.show()
 
 
@@ -446,12 +449,12 @@ def save_steering_results(
     filepath: str,
     metadata: Optional[Dict] = None
 ) -> None:
-    """
-    Save steering results to JSON, handling numpy arrays and tensors.
-    """
-    import os
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    
+    """Save steering results to JSON, handling numpy arrays and tensors."""
+    # BUG FIX: guard against dirname being empty string (bare filename)
+    dirname = os.path.dirname(filepath)
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
+
     def convert_to_serializable(obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -467,45 +470,53 @@ def save_steering_results(
             return [convert_to_serializable(item) for item in obj]
         else:
             return obj
-    
+
     serializable = convert_to_serializable(results)
-    
+
     if metadata:
         serializable['_metadata'] = metadata
-    
+
     with open(filepath, 'w') as f:
         json.dump(serializable, f, indent=2)
-    
+
     print(f"Results saved to {filepath}")
 
 
 def load_steering_results(filepath: str) -> Dict:
     """
     Load steering results from JSON.
+
+    BUG FIX: JSON forces all dict keys to strings, so float alpha keys (0.0,
+    1.0 ...) become "0.0", "1.0" ... after a save/load round-trip.  The
+    _alpha_keys() and _get_alpha() helpers throughout this module handle that
+    transparently, so no key conversion is done here to keep the structure
+    intact.
     """
     with open(filepath, 'r') as f:
         results = json.load(f)
     return results
 
 
-# Keep original functions for backward compatibility
+# ---------------------------------------------------------------------------
+# Backward-compatibility: variance-estimation wrapper
+# ---------------------------------------------------------------------------
+
 def run_steering_with_variance_estimation(
     model, tokenizer, problem_row, concept_a, concept_b,
-    latent_step_to_steer=0, alphas=None, device="cuda", latent_id=None, 
-    start_id=None, end_id=None, steering_vector=None, n_baseline_samples=10, 
+    latent_step_to_steer=0, alphas=None, device="cuda", latent_id=None,
+    start_id=None, end_id=None, steering_vector=None, n_baseline_samples=10,
     model_type="coconut"
 ):
     """Original function kept for backward compatibility."""
     from src.coconut_steering import run_steering as run_coconut_steering
     from src.verbal_steering import run_verbal_steering
-    
+
     if alphas is None:
         alphas = [0.0, 1.0, 2.0, 5.0, 10.0, 20.0]
-    
-    # First, estimate baseline variance
+
     baseline_logit_diffs = []
     baseline_probs = []
-    
+
     for _ in range(n_baseline_samples):
         if model_type == "coconut":
             result = run_coconut_steering(
@@ -520,20 +531,21 @@ def run_steering_with_variance_estimation(
                 step_to_steer=latent_step_to_steer, alphas=[0.0],
                 device=device, steering_vector=steering_vector,
             )
-        
-        if result and 0.0 in result:
-            baseline_logit_diffs.append(result[0.0]["logit_diff"])
-            baseline_probs.append(result[0.0]["prob_a"])
-    
+
+        if result:
+            r0 = _get_alpha(result, 0.0)
+            if r0:
+                baseline_logit_diffs.append(r0["logit_diff"])
+                baseline_probs.append(r0["prob_a"])
+
     if not baseline_logit_diffs:
         return None
-    
+
     baseline_mean = np.mean(baseline_logit_diffs)
     baseline_std = np.std(baseline_logit_diffs)
     baseline_prob_mean = np.mean(baseline_probs)
     baseline_prob_std = np.std(baseline_probs)
-    
-    # Now run steering at each alpha
+
     if model_type == "coconut":
         results = run_coconut_steering(
             model, tokenizer, problem_row, concept_a, concept_b,
@@ -547,15 +559,14 @@ def run_steering_with_variance_estimation(
             step_to_steer=latent_step_to_steer, alphas=alphas,
             device=device, steering_vector=steering_vector,
         )
-    
+
     if not results:
         return None
-    
-    # Normalize effects
+
     normalized = compute_normalized_effect(
         results, baseline_mean, token_logit_std=baseline_std
     )
-    
+
     return {
         "baseline_mean": baseline_mean,
         "baseline_std": baseline_std,

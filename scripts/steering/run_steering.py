@@ -1,24 +1,25 @@
-# scripts/run_steering.py
+# scripts/steering/run_steering.py
 """
 Run steering experiments on Coconut and/or Verbal CoT models.
 Saves raw results for later analysis.
-
-Usage:
-    python scripts/run_steering.py --model_type coconut --n_problems 50
-    python scripts/run_steering.py --model_type both --sweep_dim step
 """
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Add the project root to path FIRST, before any other imports
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, PROJECT_ROOT)
 
 import torch
 import json
 import argparse
 import numpy as np
 from tqdm import tqdm
-from transformers import AutoTokenizer, GPT2LMHeadModel
 from datetime import datetime
+
+# Use the existing model_utils
+from src.model_utils import load_coconut_model, load_verbal_cot_model
 
 from src.coconut_steering import (
     run_steering_sweep as coconut_sweep,
@@ -43,73 +44,37 @@ def parse_args():
     parser.add_argument("--model_type", type=str, default="coconut", 
                         choices=["coconut", "verbal", "both"])
     parser.add_argument("--coconut_checkpoint", type=str, 
-                        default="checkpoints/coconut_prontoqa")
+                        default="checkpoints/coconut/final")
     parser.add_argument("--verbal_checkpoint", type=str,
-                        default="checkpoints/verbal_cot_prontoqa")
+                        default="checkpoints/verbal_cot/final")
     
     # Data
     parser.add_argument("--data_path", type=str, default="data/prontoqa_split.csv")
     parser.add_argument("--data_split", type=str, default="test")
-    parser.add_argument("--n_problems", type=int, default=50)
+    parser.add_argument("--n_problems", type=int, default=10)
     parser.add_argument("--start_idx", type=int, default=0)
     
     # Steering parameters
     parser.add_argument("--alphas", type=float, nargs="+", 
-                        default=[0.0, 1.0, 2.0, 5.0, 10.0, 20.0])
+                        default=[0.0, 1.0, 2.0, 5.0, 10.0])
     parser.add_argument("--sweep_dim", type=str, default="step",
                         choices=["step", "layer", "both", "position", "normalization", "all_steps"])
-    parser.add_argument("--steering_method", type=str, default="contrast",
+    parser.add_argument("--steering_method", type=str, default="embedding",
                         choices=["contrast", "embedding"])
     
     # Output
     parser.add_argument("--output_dir", type=str, default="results/steering/raw")
     parser.add_argument("--experiment_name", type=str, default=None)
-    parser.add_argument("--save_activations", action="store_true",
-                        help="Save intermediate activations (larger files)")
+    parser.add_argument("--save_activations", action="store_true")
     
     # Hardware
-    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=42)
     
     # Debug
     parser.add_argument("--verbose", action="store_true")
     
     return parser.parse_args()
-
-
-def load_coconut_model(checkpoint_path: str, device: str):
-    """Load Coconut model."""
-    try:
-        from coconut.coconut import CoconutModel, CoconutConfig
-        
-        config = CoconutConfig.from_pretrained(checkpoint_path)
-        model = CoconutModel.from_pretrained(checkpoint_path, config=config)
-    except:
-        from coconut.coconut import CoconutModel
-        model = CoconutModel.from_pretrained(checkpoint_path)
-    
-    model.to(device)
-    model.eval()
-    return model
-
-
-def load_verbal_model(checkpoint_path: str, device: str):
-    """Load Verbal CoT model (fine-tuned GPT-2)."""
-    model = GPT2LMHeadModel.from_pretrained(checkpoint_path)
-    model.to(device)
-    model.eval()
-    return model
-
-
-def get_tokenizer():
-    """Get tokenizer with special tokens for Coconut."""
-    tokenizer = AutoTokenizer.from_pretrained("gpt2")
-    tokenizer.pad_token = tokenizer.eos_token
-    
-    special_tokens = {"additional_special_tokens": ["<start>", "<end>", "<latent>"]}
-    tokenizer.add_special_tokens(special_tokens)
-    
-    return tokenizer
 
 
 def run_coconut_experiment(
@@ -124,11 +89,11 @@ def run_coconut_experiment(
     # Construct steering vector
     if args.steering_method == "contrast":
         premise, negated = extract_premise_and_negation(problem_dict, step_idx=0)
-        if premise and negated and args.verbose:
-            print(f"  Premise: {premise}")
-            print(f"  Negated: {negated}")
-        
         if premise and negated:
+            if args.verbose:
+                print(f"  Premise: {premise}")
+                print(f"  Negated: {negated}")
+            
             steering_vector = construct_contrast_vector_from_negation(
                 model, tokenizer, premise, negated,
                 latent_id, start_id, end_id,
@@ -142,12 +107,13 @@ def run_coconut_experiment(
     
     if steering_vector is None:
         if args.verbose:
-            print("  Falling back to embedding difference")
+            print("  Using embedding difference for steering vector")
         steering_vector = construct_contrast_vector_from_embeddings(
             model, tokenizer, concept_a, concept_b
         )
     
     if steering_vector is None:
+        print("  Failed to construct steering vector")
         return None
     
     # Run sweep
@@ -170,23 +136,12 @@ def run_verbal_experiment(
     concept_b = "False"
     
     # Construct steering vector
-    if args.steering_method == "contrast":
-        premise, negated = extract_premise_and_negation(problem_dict, step_idx=0)
-        if premise and negated and args.verbose:
-            print(f"  Premise: {premise}")
-            print(f"  Negated: {negated}")
-        
-        # For verbal, we still use embedding difference as contrast vector
-        # (Could extend to activation-based later)
-        steering_vector = construct_contrast_vector_from_embeddings(
-            model, tokenizer, concept_a, concept_b
-        )
-    else:
-        steering_vector = construct_contrast_vector_from_embeddings(
-            model, tokenizer, concept_a, concept_b
-        )
+    steering_vector = construct_contrast_vector_from_embeddings(
+        model, tokenizer, concept_a, concept_b
+    )
     
     if steering_vector is None:
+        print("  Failed to construct steering vector")
         return None
     
     # Run sweep
@@ -226,12 +181,8 @@ def main():
     print(f"Sweep dimension: {args.sweep_dim}")
     print(f"Alphas: {args.alphas}")
     print(f"Output directory: {output_dir}")
-    
-    # Load tokenizer
-    tokenizer = get_tokenizer()
-    latent_id = tokenizer.convert_tokens_to_ids("<latent>")
-    start_id = tokenizer.convert_tokens_to_ids("<start>")
-    end_id = tokenizer.convert_tokens_to_ids("<end>")
+    print(f"Device: {args.device}")
+    print(f"Project root: {PROJECT_ROOT}")
     
     # Load data
     print(f"\nLoading data from {args.data_path} ({args.data_split} split)")
@@ -244,18 +195,55 @@ def main():
     
     # Load models
     models_loaded = {}
+    tokenizers = {}
+    coconut_special_tokens = None
     
     if args.model_type in ["coconut", "both"]:
         print("\n" + "-"*40)
         print("Loading Coconut model...")
-        models_loaded["coconut"] = load_coconut_model(args.coconut_checkpoint, args.device)
-        print(f"  Loaded from {args.coconut_checkpoint}")
+        try:
+            # Change to checkpoint directory for proper relative path handling
+            os.chdir(PROJECT_ROOT)
+            model, tokenizer = load_coconut_model(device=args.device)
+            
+            # Extract special tokens
+            latent_id = tokenizer.convert_tokens_to_ids("<latent>")
+            start_id = tokenizer.convert_tokens_to_ids("<start_latent>")
+            end_id = tokenizer.convert_tokens_to_ids("<end_latent>")
+            
+            # Handle cases where tokens might have different names
+            if start_id == tokenizer.unk_token_id:
+                start_id = tokenizer.convert_tokens_to_ids("<start>")
+            if end_id == tokenizer.unk_token_id:
+                end_id = tokenizer.convert_tokens_to_ids("<end>")
+            
+            models_loaded["coconut"] = model
+            tokenizers["coconut"] = tokenizer
+            coconut_special_tokens = (latent_id, start_id, end_id)
+            print(f"  Loaded from {args.coconut_checkpoint}")
+            print(f"  Special tokens: start={start_id}, end={end_id}, latent={latent_id}")
+        except Exception as e:
+            print(f"  Error loading Coconut model: {e}")
+            import traceback
+            traceback.print_exc()
     
     if args.model_type in ["verbal", "both"]:
         print("\n" + "-"*40)
         print("Loading Verbal CoT model...")
-        models_loaded["verbal"] = load_verbal_model(args.verbal_checkpoint, args.device)
-        print(f"  Loaded from {args.verbal_checkpoint}")
+        try:
+            os.chdir(PROJECT_ROOT)
+            model, tokenizer = load_verbal_cot_model(device=args.device)
+            models_loaded["verbal"] = model
+            tokenizers["verbal"] = tokenizer
+            print(f"  Loaded from {args.verbal_checkpoint}")
+        except Exception as e:
+            print(f"  Error loading Verbal model: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    if not models_loaded:
+        print("\nERROR: No models could be loaded!")
+        return
     
     # Run experiments
     all_results = {
@@ -266,7 +254,6 @@ def main():
             "data_split": args.data_split,
             "n_problems": len(df_selected),
             "start_idx": args.start_idx,
-            "hop_distribution": df_selected["n_hops"].value_counts().to_dict() if "n_hops" in df_selected.columns else {},
         },
         "results": []
     }
@@ -276,6 +263,8 @@ def main():
         print(f"RUNNING {model_type.upper()} EXPERIMENTS")
         print("="*60)
         
+        tokenizer = tokenizers[model_type]
+        
         for idx in tqdm(range(len(df_selected)), desc=f"{model_type}"):
             problem_dict = get_problem_by_idx(df_selected, idx)
             
@@ -284,6 +273,7 @@ def main():
             
             try:
                 if model_type == "coconut":
+                    latent_id, start_id, end_id = coconut_special_tokens
                     result = run_coconut_experiment(
                         model, tokenizer, problem_dict, args,
                         latent_id, start_id, end_id
@@ -309,7 +299,8 @@ def main():
                         "sweep_results": result
                     })
                 else:
-                    print(f"  Warning: Failed on problem {args.start_idx + idx}")
+                    if args.verbose:
+                        print(f"  Warning: Failed on problem {args.start_idx + idx}")
                     
             except Exception as e:
                 print(f"  Error on problem {args.start_idx + idx}: {e}")
@@ -334,12 +325,11 @@ def main():
     )
     
     # Summary
-    successful = len([r for r in all_results["results"]])
+    successful = len(all_results["results"])
     print(f"\nExperiment complete!")
     print(f"  Successful problems: {successful}/{len(df_selected)}")
     print(f"  Results saved to: {output_dir}")
     
-    # Quick summary by model type
     for model_type in models_loaded.keys():
         model_results = [r for r in all_results["results"] if r["model_type"] == model_type]
         print(f"  {model_type}: {len(model_results)} results")
