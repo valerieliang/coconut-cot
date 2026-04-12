@@ -23,7 +23,6 @@ from src.model_utils import load_coconut_model, load_verbal_cot_model
 
 from src.coconut_steering import (
     run_steering_sweep as coconut_sweep,
-    construct_contrast_vector_from_negation,
     construct_contrast_vector_from_embeddings,
 )
 from src.verbal_steering import (

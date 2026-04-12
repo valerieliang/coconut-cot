@@ -1,13 +1,12 @@
 # src/coconut_steering.py
 """
 Enhanced Coconut steering with multi-step and multi-layer intervention capabilities.
-Supports steering at different levels of reasoning as described in the proposal.
 """
 
 import torch
 import torch.nn.functional as F
 import numpy as np
-from typing import Optional, List, Dict, Union, Tuple
+from typing import Optional, List, Dict, Union
 
 
 def construct_contrast_vector_from_embeddings(
@@ -42,79 +41,16 @@ def construct_contrast_vector_from_embeddings(
 
     return direction
 
-
-def construct_contrast_vector_from_negation(
-    model,
-    tokenizer,
-    premise: str,
-    negated: str,
-    latent_id: int,
-    start_id: int,
-    end_id: int,
-    n_hops: int,
-    step_to_extract: int = 0,
-    layer: int = -1,
-    device: str = "cuda"
-) -> Optional[torch.Tensor]:
-    """
-    Extract contrast vector from premise vs negated statement.
-    This captures the semantic difference between true and false propositions.
-    """
-    
-    def get_latent_representation(text: str) -> Optional[torch.Tensor]:
-        """Get hidden state at latent position for given text."""
-        # Tokenize the text
-        text_with_newline = text + "\n" if not text.endswith("\n") else text
-        question_ids = tokenizer.encode(text_with_newline, add_special_tokens=True)
-        
-        # Build sequence with latent tokens
-        input_ids = question_ids + [start_id] + [latent_id] * n_hops + [end_id]
-        input_tensor = torch.tensor(input_ids).unsqueeze(0).to(device)
-        
-        with torch.no_grad():
-            outputs = model(
-                input_ids=input_tensor,
-                output_hidden_states=True,
-                return_dict=True
-            )
-        
-        # Get hidden states from specified layer
-        if layer == -1:
-            hidden_states = outputs.hidden_states[-1]
-        else:
-            hidden_states = outputs.hidden_states[layer]
-        
-        # Extract at the specific latent position
-        latent_pos = len(question_ids) + 1 + step_to_extract
-        if latent_pos >= hidden_states.shape[1]:
-            print(f"Latent position {latent_pos} out of range (max {hidden_states.shape[1]})")
-            return None
-        
-        return hidden_states[0, latent_pos, :].clone()
-    
-    premise_rep = get_latent_representation(premise)
-    negated_rep = get_latent_representation(negated)
-    
-    if premise_rep is None or negated_rep is None:
-        print("Failed to extract representations")
-        return None
-    
-    direction = premise_rep - negated_rep
-    direction = direction / (torch.norm(direction) + 1e-8)
-    
-    return direction
-
-
 class SelectiveHook:
     """
     Hook that selectively steers at specific latent steps.
-    Tracks latent step index correctly across the forward pass.
+    Includes debug logging.
     """
-    def __init__(self, target_step_idx: int, steering_vec: torch.Tensor, alpha_val: float,
-                 steer_all_steps: bool, n_hops_val: int, position_mode_val: str, 
-                 norm_mode_val: str, question_len: int):
+    def __init__(self, target_step_idx, steering_vec, alpha_val, 
+                 steer_all_steps, n_hops_val, position_mode_val, norm_mode_val,
+                 question_len, latent_start_pos):
         self.target_step_idx = target_step_idx
-        self.latent_step_counter = -1  # Start at -1 so first latent step is 0
+        self.latent_step_counter = -1
         self.steering_vec = steering_vec
         self.alpha_val = alpha_val
         self.steer_all = steer_all_steps
@@ -122,84 +58,85 @@ class SelectiveHook:
         self.position_mode = position_mode_val
         self.norm_mode = norm_mode_val
         self.question_len = question_len
+        self.latent_start_pos = latent_start_pos
         self.was_steered = False
         self.steered_activations = []
-        self.hook_calls = 0
+        self.processed_latents = set()
+        self.hook_call_count = 0  # Debug counter
     
     def hook_fn(self, module, input, output):
-        """Apply steering at appropriate latent steps."""
-        self.hook_calls += 1
-        
-        # Determine if we're at a latent position
-        # The hook gets called for every token position in every forward pass
-        # We need to identify which positions correspond to latent tokens
+        self.hook_call_count += 1
         
         if isinstance(output, tuple):
             hidden_states = output[0].clone()
         else:
             hidden_states = output.clone()
         
-        # Find latent token positions
-        # Latent tokens are at positions: question_len + 1 + i for i in range(n_hops)
-        # But we need to know the current sequence length
-        
         seq_len = hidden_states.shape[1]
-        latent_positions = []
         
-        for i in range(self.n_hops):
-            latent_pos = self.question_len + 1 + i
+        # DEBUG: Print first few calls
+        if self.hook_call_count <= 3:
+            print(f"  [DEBUG] Hook call #{self.hook_call_count}: seq_len={seq_len}, "
+                  f"latent_start_pos={self.latent_start_pos}, n_hops={self.n_hops}")
+        
+        # Find all latent token positions
+        latent_positions_found = []
+        for step_idx in range(self.n_hops):
+            latent_pos = self.latent_start_pos + step_idx
             if latent_pos < seq_len:
-                latent_positions.append((i, latent_pos))
+                latent_positions_found.append((step_idx, latent_pos))
         
-        # For each latent position at this layer, check if we should steer
-        for step_idx, pos in latent_positions:
-            # Determine if we should steer at this step
-            should_steer = False
-            if self.steer_all:
-                should_steer = True
-            else:
-                should_steer = (step_idx == self.target_step_idx)
-            
-            if should_steer:
-                pre_steer_activation = hidden_states[0, pos, :].clone()
+        # DEBUG: Print if we found latent positions
+        if latent_positions_found and self.hook_call_count <= 3:
+            print(f"  [DEBUG] Found latent positions: {latent_positions_found}")
+        
+        for step_idx, latent_pos in latent_positions_found:
+            if latent_pos not in self.processed_latents:
+                self.processed_latents.add(latent_pos)
                 
-                # Ensure steering vector is on correct device/dtype
-                if self.steering_vec.device != hidden_states.device:
-                    self.steering_vec = self.steering_vec.to(
-                        device=hidden_states.device, 
-                        dtype=hidden_states.dtype
-                    )
+                # Determine if we should steer at this step
+                should_steer = False
+                if self.steer_all:
+                    should_steer = True
+                else:
+                    should_steer = (step_idx == self.target_step_idx)
                 
-                # Apply steering with normalization (single normalization only)
-                if self.norm_mode == 'activation':
-                    activation_norm = torch.norm(pre_steer_activation)
-                    if activation_norm > 1e-6:
-                        # Scale by activation norm to maintain consistent effect magnitude
-                        scaled = self.steering_vec * self.alpha_val * activation_norm
+                if should_steer:
+                    if self.hook_call_count <= 3:
+                        print(f"  [DEBUG] STEERING at step {step_idx}, pos {latent_pos}, alpha={self.alpha_val}")
+                    
+                    pre_steer_activation = hidden_states[0, latent_pos, :].clone()
+                    
+                    if self.steering_vec.device != hidden_states.device:
+                        self.steering_vec = self.steering_vec.to(
+                            device=hidden_states.device, 
+                            dtype=hidden_states.dtype
+                        )
+                    
+                    if self.norm_mode == 'activation':
+                        activation_norm = torch.norm(pre_steer_activation)
+                        if activation_norm > 1e-6:
+                            scaled = self.steering_vec * self.alpha_val * activation_norm
+                        else:
+                            scaled = self.steering_vec * self.alpha_val
                     else:
                         scaled = self.steering_vec * self.alpha_val
-                else:
-                    # No normalization, just scale
-                    scaled = self.steering_vec * self.alpha_val
-                
-                hidden_states[0, pos, :] += scaled
-                self.was_steered = True
-                
-                self.steered_activations.append({
-                    'step': step_idx,
-                    'alpha': self.alpha_val,
-                    'position': pos,
-                    'pre_steer_norm': torch.norm(pre_steer_activation).item(),
-                    'steering_magnitude': torch.norm(scaled).item(),
-                })
+                    
+                    hidden_states[0, latent_pos, :] += scaled
+                    self.was_steered = True
+                    
+                    self.steered_activations.append({
+                        'step': step_idx,
+                        'alpha': self.alpha_val,
+                        'position': latent_pos,
+                        'pre_steer_norm': torch.norm(pre_steer_activation).item(),
+                        'steering_magnitude': torch.norm(scaled).item(),
+                    })
         
-        # Return modified hidden states
         if isinstance(output, tuple):
             return (hidden_states,) + output[1:]
         else:
             return hidden_states
-
-
 def run_steering_multilevel(
     model,
     tokenizer,
@@ -216,10 +153,6 @@ def run_steering_multilevel(
 ) -> Optional[Dict]:
     """
     Run steering with configurable intervention points.
-    
-    Uses SelectiveHook pattern to track passes through
-    the Coconut model's recurrent structure, steering at the correct
-    latent token position.
     """
 
     if alphas is None:
@@ -265,6 +198,11 @@ def run_steering_multilevel(
 
     # Build input sequence
     question_ids = tokenizer.encode(question + "\n", add_special_tokens=True)
+    question_len = len(question_ids)
+    
+    # The first latent token appears after question
+    latent_start_pos = question_len
+    
     input_ids = question_ids + [start_id] + [latent_id] * n_hops + [end_id]
     input_tensor = torch.tensor(input_ids).unsqueeze(0).to(device)
     attn_mask = torch.ones_like(input_tensor)
@@ -299,7 +237,7 @@ def run_steering_multilevel(
             selective_hook = SelectiveHook(
                 target_step, direction.clone(), alpha, 
                 steer_all, n_hops, position_mode, norm_mode,
-                len(question_ids)
+                question_len, latent_start_pos  # Now latent_start_pos = question_len
             )
             
             target_layer = layers[target_layer_idx]
@@ -375,7 +313,8 @@ def run_steering_multilevel(
         'concept_b': concept_b,
         'token_id_a': token_id_a,
         'token_id_b': token_id_b,
-        'question_length': len(question_ids),
+        'question_length': question_len,
+        'latent_start_pos': latent_start_pos,
     }
     
     return results
@@ -422,59 +361,6 @@ def run_steering_sweep(
             )
             if result:
                 sweep_results[f'step_{step}'] = result
-    
-    elif sweep_dim == 'layer':
-        if hasattr(model, 'base_causallm'):
-            n_layers = len(model.base_causallm.transformer.h)
-        elif hasattr(model, 'transformer'):
-            n_layers = len(model.transformer.h)
-        else:
-            n_layers = 12
-        
-        print(f"Sweeping over {n_layers} layers...")
-        for layer in range(n_layers):
-            config = {
-                'step': 0,
-                'layer': layer,
-                'position': 'latent',
-                'normalization': 'activation',
-                'steer_all_steps': False
-            }
-            result = run_steering_multilevel(
-                model, tokenizer, problem_row, concept_a, concept_b,
-                alphas=alphas, device=device, latent_id=latent_id,
-                start_id=start_id, end_id=end_id,
-                steering_vector=steering_vector, steer_config=config
-            )
-            if result:
-                sweep_results[f'layer_{layer}'] = result
-    
-    elif sweep_dim == 'both':
-        if hasattr(model, 'base_causallm'):
-            n_layers = len(model.base_causallm.transformer.h)
-        elif hasattr(model, 'transformer'):
-            n_layers = len(model.transformer.h)
-        else:
-            n_layers = 12
-        
-        print(f"Sweeping over {n_hops} steps x {n_layers} layers...")
-        for step in range(n_hops):
-            for layer in range(n_layers):
-                config = {
-                    'step': step,
-                    'layer': layer,
-                    'position': 'latent',
-                    'normalization': 'activation',
-                    'steer_all_steps': False
-                }
-                result = run_steering_multilevel(
-                    model, tokenizer, problem_row, concept_a, concept_b,
-                    alphas=alphas, device=device, latent_id=latent_id,
-                    start_id=start_id, end_id=end_id,
-                    steering_vector=steering_vector, steer_config=config
-                )
-                if result:
-                    sweep_results[f'step{step}_layer{layer}'] = result
     
     return sweep_results
 
