@@ -16,7 +16,7 @@
   "sweep_dim": "step",
   "steering_method": "embedding",
   "output_dir": "results/steering/raw",
-  "experiment_name": "my_experiment",
+  "experiment_name": "experiment",
   "save_activations": false,
   "device": "cpu",
   "seed": 42,
