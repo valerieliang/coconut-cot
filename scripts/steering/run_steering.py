@@ -87,6 +87,8 @@ def run_coconut_experiment(
     concept_b = "False"
     
     # Construct steering vector
+    steering_vector = None
+    
     if args.steering_method == "contrast":
         premise, negated = extract_premise_and_negation(problem_dict, step_idx=0)
         if premise and negated:
@@ -100,11 +102,8 @@ def run_coconut_experiment(
                 problem_dict.get("n_hops", len(problem_dict.get("steps", []))),
                 step_to_extract=0, layer=-1, device=args.device
             )
-        else:
-            steering_vector = None
-    else:
-        steering_vector = None
     
+    # Fall back to embedding difference
     if steering_vector is None:
         if args.verbose:
             print("  Using embedding difference for steering vector")
@@ -135,7 +134,7 @@ def run_verbal_experiment(
     concept_a = "True"
     concept_b = "False"
     
-    # Construct steering vector
+    # Construct steering vector from embedding difference
     steering_vector = construct_contrast_vector_from_embeddings(
         model, tokenizer, concept_a, concept_b
     )
@@ -152,6 +151,21 @@ def run_verbal_experiment(
     )
     
     return sweep_results
+
+
+def load_model_safe(model_type: str, checkpoint_path: str, device: str):
+    """Safely load model without changing directory."""
+    original_dir = os.getcwd()
+    try:
+        # Use absolute path
+        abs_path = os.path.join(PROJECT_ROOT, checkpoint_path)
+        if model_type == "coconut":
+            return load_coconut_model(model_path=abs_path, device=device)
+        else:
+            return load_verbal_cot_model(model_path=abs_path, device=device)
+    finally:
+        # Restore original directory
+        os.chdir(original_dir)
 
 
 def main():
@@ -185,8 +199,9 @@ def main():
     print(f"Project root: {PROJECT_ROOT}")
     
     # Load data
-    print(f"\nLoading data from {args.data_path} ({args.data_split} split)")
-    df = load_prontoqa(args.data_path, split=args.data_split)
+    data_path = os.path.join(PROJECT_ROOT, args.data_path)
+    print(f"\nLoading data from {data_path} ({args.data_split} split)")
+    df = load_prontoqa(data_path, split=args.data_split)
     
     # Select problems
     end_idx = min(args.start_idx + args.n_problems, len(df))
@@ -202,9 +217,9 @@ def main():
         print("\n" + "-"*40)
         print("Loading Coconut model...")
         try:
-            # Change to checkpoint directory for proper relative path handling
-            os.chdir(PROJECT_ROOT)
-            model, tokenizer = load_coconut_model(device=args.device)
+            model, tokenizer = load_model_safe(
+                "coconut", args.coconut_checkpoint, args.device
+            )
             
             # Extract special tokens
             latent_id = tokenizer.convert_tokens_to_ids("<latent>")
@@ -231,8 +246,9 @@ def main():
         print("\n" + "-"*40)
         print("Loading Verbal CoT model...")
         try:
-            os.chdir(PROJECT_ROOT)
-            model, tokenizer = load_verbal_cot_model(device=args.device)
+            model, tokenizer = load_model_safe(
+                "verbal", args.verbal_checkpoint, args.device
+            )
             models_loaded["verbal"] = model
             tokenizers["verbal"] = tokenizer
             print(f"  Loaded from {args.verbal_checkpoint}")
@@ -273,6 +289,9 @@ def main():
             
             try:
                 if model_type == "coconut":
+                    if coconut_special_tokens is None:
+                        print(f"  Skipping: No special tokens for Coconut")
+                        continue
                     latent_id, start_id, end_id = coconut_special_tokens
                     result = run_coconut_experiment(
                         model, tokenizer, problem_dict, args,

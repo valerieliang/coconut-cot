@@ -10,35 +10,78 @@ import numpy as np
 from typing import Optional, List, Dict, Union
 
 
-# ---------------------------------------------------------------------------
-# Key-coercion helpers (mirrors steering_analysis.py)
-# ---------------------------------------------------------------------------
-# JSON serialisation turns float alpha keys into strings.  These helpers make
-# all alpha-key lookups transparent to the storage backend.
-
-def _alpha_keys(results: Dict) -> List[float]:
-    alphas = []
-    for k in results.keys():
-        if isinstance(k, (int, float)):
-            alphas.append(float(k))
-        elif isinstance(k, str):
-            try:
-                alphas.append(float(k))
-            except ValueError:
-                pass
-    return sorted(alphas)
-
-
-def _get_alpha(results: Dict, alpha: float):
-    v = results.get(alpha)
-    if v is None:
-        v = results.get(str(alpha))
-    return v
+def compute_step_boundaries(
+    tokenizer,
+    question: str,
+    steps: List[str]
+) -> List[int]:
+    """
+    Compute token positions where each reasoning step ends.
+    Returns list of token indices (0-indexed) for the last token of each step.
+    """
+    boundaries = []
+    
+    # Tokenize question + newline
+    question_tokens = tokenizer.encode(question + "\n", add_special_tokens=False)
+    cumulative = len(question_tokens) - 1  # Last token position of question
+    
+    for step in steps:
+        step_tokens = tokenizer.encode(step, add_special_tokens=False)
+        cumulative += len(step_tokens)  # Position of last token in step
+        boundaries.append(cumulative - 1)  # 0-indexed position
+    
+    return boundaries
 
 
-# ---------------------------------------------------------------------------
-# Core steering function
-# ---------------------------------------------------------------------------
+class VerbalSteeringHook:
+    """
+    Hook for steering verbal CoT at specific step positions.
+    """
+    def __init__(self, target_position: int, steering_vec: torch.Tensor, 
+                 alpha_val: float, norm_mode: str):
+        self.target_position = target_position
+        self.steering_vec = steering_vec
+        self.alpha_val = alpha_val
+        self.norm_mode = norm_mode
+        self.was_steered = False
+        self.steered_activation = None
+    
+    def hook_fn(self, module, input, output):
+        if isinstance(output, tuple):
+            hidden_states = output[0].clone()
+        else:
+            hidden_states = output.clone()
+        
+        # Check if we're at the target position
+        if self.target_position < hidden_states.shape[1]:
+            pre_steer = hidden_states[0, self.target_position, :].clone()
+            
+            # Ensure steering vector is compatible
+            if self.steering_vec.device != hidden_states.device:
+                self.steering_vec = self.steering_vec.to(
+                    device=hidden_states.device, 
+                    dtype=hidden_states.dtype
+                )
+            
+            # Apply steering with normalization
+            if self.norm_mode == 'activation':
+                activation_norm = torch.norm(pre_steer)
+                if activation_norm > 1e-6:
+                    scaled = self.steering_vec * self.alpha_val * activation_norm
+                else:
+                    scaled = self.steering_vec * self.alpha_val
+            else:
+                scaled = self.steering_vec * self.alpha_val
+            
+            hidden_states[0, self.target_position, :] += scaled
+            self.was_steered = True
+            self.steered_activation = hidden_states[0, self.target_position, :].clone()
+        
+        if isinstance(output, tuple):
+            return (hidden_states,) + output[1:]
+        else:
+            return hidden_states
+
 
 def run_verbal_steering_multilevel(
     model,
@@ -62,10 +105,11 @@ def run_verbal_steering_multilevel(
         steer_config = {
             'step': 0,
             'layer': -1,
-            'position': 'last',
+            'position': 'step_end',
             'normalization': 'activation'
         }
 
+    # Get token IDs for concepts
     tokens_a = tokenizer.encode(" " + concept_a, add_special_tokens=False)
     tokens_b = tokenizer.encode(" " + concept_b, add_special_tokens=False)
     token_id_a = tokens_a[0] if tokens_a else None
@@ -75,12 +119,14 @@ def run_verbal_steering_multilevel(
         print(f"Cannot tokenize {concept_a} or {concept_b}")
         return None
 
+    # Prepare steering direction
     if steering_vector is not None:
         if isinstance(steering_vector, np.ndarray):
             direction = torch.from_numpy(steering_vector).float()
         else:
             direction = steering_vector.float()
     else:
+        # Construct from embedding difference
         if hasattr(model, 'transformer'):
             embed_matrix = model.transformer.wte.weight
         elif hasattr(model, 'base_causallm'):
@@ -96,28 +142,43 @@ def run_verbal_steering_multilevel(
         embed_a = embed_matrix[token_id_a].detach().cpu()
         embed_b = embed_matrix[token_id_b].detach().cpu()
         direction = embed_a - embed_b
-        direction = direction / torch.norm(direction)
+        direction = direction / (torch.norm(direction) + 1e-8)
 
     direction = direction.to(device)
 
-    steps = problem_row["steps"]
+    # Get problem data
+    steps = problem_row.get("steps", [])
     question = problem_row["question"]
+    
+    if not steps:
+        print("No steps found in problem")
+        return None
 
     target_step_idx = steer_config.get('step', 0)
-
+    
+    # Clamp step index to valid range
+    target_step_idx = min(target_step_idx, len(steps) - 1)
+    
+    # Compute step boundaries
+    step_boundaries = compute_step_boundaries(tokenizer, question, steps)
+    target_position = step_boundaries[target_step_idx]
+    
+    # Build input text up to and including target step
     text_parts = [question]
     for i in range(target_step_idx + 1):
         if i < len(steps):
             text_parts.append(steps[i])
     text = "\n".join(text_parts)
-
+    
+    # Tokenize
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
     inputs = {k: v.to(device) for k, v in inputs.items()}
-
+    
     results = {}
     baseline_logit_diff = None
     baseline_probs = None
 
+    # Get transformer layers
     if hasattr(model, 'transformer'):
         layers = model.transformer.h
     elif hasattr(model, 'base_causallm'):
@@ -126,60 +187,24 @@ def run_verbal_steering_multilevel(
         print("Cannot find transformer layers")
         return None
 
+    target_layer_idx = steer_config.get('layer', -1)
+    if target_layer_idx == -1:
+        target_layer_idx = len(layers) - 1
+    
+    norm_mode = steer_config.get('normalization', 'activation')
+
     for alpha in alphas:
         with torch.no_grad():
-
-            was_steered_flag = [False]
-            steered_activation_ref = [None]
-
-            def hook_fn(module, input, output):
-                if isinstance(output, tuple):
-                    hidden_states = output[0].clone()
-                else:
-                    hidden_states = output.clone()
-
-                sv = direction.clone()
-                if sv.device != hidden_states.device:
-                    sv = sv.to(device=hidden_states.device, dtype=hidden_states.dtype)
-
-                position_mode = steer_config.get('position', 'last')
-                if position_mode == 'last':
-                    pos = hidden_states.shape[1] - 1
-                elif position_mode == 'step_end':
-                    pos = hidden_states.shape[1] - 1
-                else:
-                    pos = hidden_states.shape[1] - 1
-
-                pre_steer = hidden_states[0, pos, :].clone()
-
-                norm_mode = steer_config.get('normalization', 'activation')
-                if norm_mode == 'activation':
-                    activation_norm = torch.norm(pre_steer)
-                    steer_norm = torch.norm(sv)
-                    if steer_norm > 1e-6 and activation_norm > 1e-6:
-                        scaled = sv * (alpha * activation_norm / steer_norm)
-                    else:
-                        scaled = sv * alpha
-                else:
-                    scaled = sv * alpha
-
-                hidden_states[0, pos, :] += scaled
-                was_steered_flag[0] = True
-                steered_activation_ref[0] = hidden_states[0, pos, :].clone()
-
-                if isinstance(output, tuple):
-                    return (hidden_states,) + output[1:]
-                else:
-                    return hidden_states
-
-            target_layer_idx = steer_config.get('layer', -1)
-            if target_layer_idx == -1:
-                target_layer_idx = len(layers) - 1
+            # Create hook for this alpha
+            hook = VerbalSteeringHook(
+                target_position, direction.clone(), alpha, norm_mode
+            )
+            
             target_layer = layers[target_layer_idx]
-            handle = target_layer.register_forward_hook(hook_fn)
+            handle = target_layer.register_forward_hook(hook.hook_fn)
 
             try:
-                outputs = model(**inputs)
+                outputs = model(**inputs, return_dict=True)
             except Exception as e:
                 handle.remove()
                 print(f"Error in forward pass: {e}")
@@ -227,7 +252,9 @@ def run_verbal_steering_multilevel(
                 "answer_flipped": answer_flipped,
                 "flipped_direction": flipped_direction,
                 "effect_size": effect_size,
-                "was_steered": was_steered_flag[0],
+                "was_steered": hook.was_steered,
+                "target_position": target_position,
+                "target_step": target_step_idx,
             }
 
     results['metadata'] = {
@@ -237,6 +264,8 @@ def run_verbal_steering_multilevel(
         'concept_a': concept_a,
         'concept_b': concept_b,
         'n_steps': len(steps),
+        'step_boundaries': step_boundaries,
+        'target_position': target_position,
     }
 
     return results
@@ -277,7 +306,7 @@ def run_verbal_steering_sweep(
             config = {
                 'step': step,
                 'layer': -1,
-                'position': 'last',
+                'position': 'step_end',
                 'normalization': 'activation'
             }
             result = run_verbal_steering_multilevel(
@@ -294,7 +323,7 @@ def run_verbal_steering_sweep(
             config = {
                 'step': 0,
                 'layer': layer,
-                'position': 'last',
+                'position': 'step_end',
                 'normalization': 'activation'
             }
             result = run_verbal_steering_multilevel(
@@ -306,14 +335,13 @@ def run_verbal_steering_sweep(
                 sweep_results[f'layer_{layer}'] = result
 
     elif sweep_dim == 'both':
-        # ASCII: 'x' instead of multiplication sign
         print(f"Sweeping over {n_steps} steps x {n_layers} layers...")
         for step in range(n_steps):
             for layer in range(n_layers):
                 config = {
                     'step': step,
                     'layer': layer,
-                    'position': 'last',
+                    'position': 'step_end',
                     'normalization': 'activation'
                 }
                 result = run_verbal_steering_multilevel(
@@ -327,10 +355,7 @@ def run_verbal_steering_sweep(
     return sweep_results
 
 
-# ---------------------------------------------------------------------------
 # Backward compatibility wrapper
-# ---------------------------------------------------------------------------
-
 def run_verbal_steering(
     model,
     tokenizer,
@@ -350,7 +375,7 @@ def run_verbal_steering(
     config = {
         'step': step_to_steer,
         'layer': layer,
-        'position': 'last',
+        'position': 'step_end',
         'normalization': 'activation'
     }
 
