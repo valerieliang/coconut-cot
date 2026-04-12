@@ -439,7 +439,7 @@ def main():
         }
     )
     
-    # Summary
+    # Summary with better propagation reporting
     successful = len(all_results["results"])
     print(f"\nExperiment complete!")
     print(f"  Successful problems: {successful}/{len(df_selected)}")
@@ -447,8 +447,54 @@ def main():
     
     for model_type in models_loaded.keys():
         model_results = [r for r in all_results["results"] if r["model_type"] == model_type]
-        print(f"  {model_type}: {len(model_results)} results")
-
+        print(f"\n  {model_type.upper()}: {len(model_results)} results")
+        
+        if len(model_results) == 0:
+            continue
+            
+        # Analyze steering effects
+        total_steered = 0
+        propagated_count = 0
+        answer_flipped_count = 0
+        max_effect = 0.0
+        
+        for r in model_results:
+            sweep_results = r.get("sweep_results", {})
+            for config_name, config_results in sweep_results.items():
+                if config_name == "metadata" or not isinstance(config_results, dict):
+                    continue
+                for alpha_key, alpha_results in config_results.items():
+                    if alpha_key == "metadata" or not isinstance(alpha_results, dict):
+                        continue
+                    try:
+                        alpha = float(alpha_key)
+                        if alpha > 0:
+                            if alpha_results.get("was_steered", False):
+                                total_steered += 1
+                            if alpha_results.get("steering_propagated", False):
+                                propagated_count += 1
+                            if alpha_results.get("answer_flipped", False):
+                                answer_flipped_count += 1
+                            effect = abs(alpha_results.get("effect_size", 0))
+                            if effect > max_effect:
+                                max_effect = effect
+                    except (ValueError, TypeError):
+                        pass
+        
+        if total_steered > 0:
+            print(f"    Steering applied: {total_steered} times")
+            print(f"    Propagated: {propagated_count} ({100*propagated_count/total_steered:.0f}%)")
+            print(f"    Answer flipped: {answer_flipped_count}")
+            print(f"    Max effect size: {max_effect:.3f}")
+            
+            if answer_flipped_count > 0:
+                print(f"    SUCCESS: Steering flipped the answer!")
+            elif propagated_count > 0:
+                print(f"    Steering propagated through reasoning chain")
+            else:
+                print(f"    Steering applied but did not propagate to output")
+        else:
+            print(f"    No steering applied (check alpha values)")
 
 
 if __name__ == "__main__":
