@@ -154,18 +154,23 @@ def run_verbal_experiment(
 
 
 def load_model_safe(model_type: str, checkpoint_path: str, device: str):
-    """Safely load model without changing directory."""
-    original_dir = os.getcwd()
-    try:
-        # Use absolute path
-        abs_path = os.path.join(PROJECT_ROOT, checkpoint_path)
-        if model_type == "coconut":
-            return load_coconut_model(model_path=abs_path, device=device)
-        else:
-            return load_verbal_cot_model(model_path=abs_path, device=device)
-    finally:
-        # Restore original directory
-        os.chdir(original_dir)
+    """
+    Safely load model without changing directory.
+    
+    Args:
+        model_type: Either 'coconut' or 'verbal'
+        checkpoint_path: Path to checkpoint (relative to PROJECT_ROOT)
+        device: Device to load on
+    """
+    # Build absolute path
+    abs_path = os.path.join(PROJECT_ROOT, checkpoint_path)
+    
+    if model_type == "coconut":
+        return load_coconut_model(checkpoint_dir=abs_path, device=device)
+    elif model_type == "verbal":
+        return load_verbal_cot_model(checkpoint_dir=abs_path, device=device)
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
 
 
 def main():
