@@ -21,18 +21,25 @@ def load_coconut_model(checkpoint_dir: str = "checkpoints/coconut/final", device
     Load Coconut model from checkpoint directory.
     
     Args:
-        checkpoint_dir: Path to Coconut checkpoint directory
+        checkpoint_dir: Path to Coconut checkpoint directory (should contain model files and coconut_state_dict.pt)
         device: Device to load model on
     """
     sys.path.insert(0, os.path.abspath("."))
     from coconut.coconut import Coconut
 
-    # Build full paths
-    checkpoint_path = os.path.join(checkpoint_dir, "final") if checkpoint_dir.endswith("final") else checkpoint_dir
-    state_dict_path = os.path.join(checkpoint_dir, "coconut_state_dict.pt")
+    # Normalize the path - remove any trailing 'final' if it's doubled
+    checkpoint_dir = os.path.normpath(checkpoint_dir)
     
-    # Try different possible state dict locations
+    # Check if the directory exists
+    if not os.path.exists(checkpoint_dir):
+        raise FileNotFoundError(f"Checkpoint directory not found: {checkpoint_dir}")
+    
+    print(f"  Loading from: {checkpoint_dir}")
+    
+    # Look for state dict
+    state_dict_path = os.path.join(checkpoint_dir, "coconut_state_dict.pt")
     if not os.path.exists(state_dict_path):
+        # Try alternative locations
         alt_paths = [
             os.path.join(checkpoint_dir, "coconut_state_dict.pt"),
             os.path.join(checkpoint_dir, "state_dict.pt"),
@@ -45,10 +52,14 @@ def load_coconut_model(checkpoint_dir: str = "checkpoints/coconut/final", device
         else:
             raise FileNotFoundError(f"Cannot find state dict in {checkpoint_dir}")
     
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+    print(f"  State dict: {state_dict_path}")
+    
+    # Load tokenizer from the checkpoint directory
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
+    # Get special token IDs
     latent_id = tokenizer.convert_tokens_to_ids("<latent>")
     start_id = tokenizer.convert_tokens_to_ids("<start_latent>")
     end_id = tokenizer.convert_tokens_to_ids("<end_latent>")
@@ -63,9 +74,11 @@ def load_coconut_model(checkpoint_dir: str = "checkpoints/coconut/final", device
     
     print(f"  Special tokens: start={start_id}, end={end_id}, latent={latent_id}")
 
-    base_lm = AutoModelForCausalLM.from_pretrained(checkpoint_path)
+    # Load base model
+    base_lm = AutoModelForCausalLM.from_pretrained(checkpoint_dir)
     base_lm.resize_token_embeddings(len(tokenizer))
 
+    # Create Coconut wrapper
     model = Coconut(base_lm, latent_id, start_id, end_id, tokenizer.eos_token_id)
     
     # Load state dict
@@ -85,6 +98,13 @@ def load_verbal_cot_model(checkpoint_dir: str = "checkpoints/verbal_cot/final", 
         checkpoint_dir: Path to Verbal CoT checkpoint directory
         device: Device to load model on
     """
+    # Normalize the path
+    checkpoint_dir = os.path.normpath(checkpoint_dir)
+    
+    if not os.path.exists(checkpoint_dir):
+        raise FileNotFoundError(f"Checkpoint directory not found: {checkpoint_dir}")
+    
+    print(f"  Loading from: {checkpoint_dir}")
     return _load(checkpoint_dir, device)
 
 
