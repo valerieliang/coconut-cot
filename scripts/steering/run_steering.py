@@ -1,7 +1,7 @@
 # scripts/steering/run_steering.py
 """
 Run steering experiments on Coconut and/or Verbal CoT models.
-Saves raw results for later analysis.
+Updated with proper persistent latent steering and control conditions.
 """
 
 import sys
@@ -24,6 +24,8 @@ from src.model_utils import load_coconut_model, load_verbal_cot_model
 from src.coconut_steering import (
     run_steering_sweep as coconut_sweep,
     construct_contrast_vector_from_embeddings,
+    construct_contrast_vector_from_negation,
+    run_steering_with_persistence,
 )
 from src.verbal_steering import (
     run_verbal_steering_sweep as verbal_sweep,
@@ -52,19 +54,29 @@ def parse_args():
     parser.add_argument("--data_split", type=str, default="test")
     parser.add_argument("--n_problems", type=int, default=10)
     parser.add_argument("--start_idx", type=int, default=0)
+    parser.add_argument("--hop_filter", type=int, nargs="+", default=None,
+                        help="Only run on problems with these hop counts")
     
     # Steering parameters
     parser.add_argument("--alphas", type=float, nargs="+", 
-                        default=[0.0, 1.0, 2.0, 5.0, 10.0])
+                        default=[0.0, 1.0, 2.0, 5.0, 10.0, 20.0])
     parser.add_argument("--sweep_dim", type=str, default="step",
-                        choices=["step", "layer", "both", "position", "normalization", "all_steps"])
-    parser.add_argument("--steering_method", type=str, default="embedding",
+                        choices=["step", "layer", "both", "all_steps"])
+    parser.add_argument("--steering_method", type=str, default="contrast",
                         choices=["contrast", "embedding"])
+    
+    # Control conditions (for proposal Section 5)
+    parser.add_argument("--random_control", action="store_true",
+                        help="Use random steering vectors as control condition")
+    parser.add_argument("--no_steering_control", action="store_true",
+                        help="Include baseline (alpha=0) as control")
     
     # Output
     parser.add_argument("--output_dir", type=str, default="results/steering/raw")
     parser.add_argument("--experiment_name", type=str, default=None)
     parser.add_argument("--save_activations", action="store_true")
+    parser.add_argument("--save_latent_vectors", action="store_true",
+                        help="Save all latent vectors for propagation analysis")
     
     # Hardware
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -87,20 +99,23 @@ def run_coconut_experiment(
     
     # Construct steering vector
     steering_vector = None
+    vector_source = "embedding"
     
     if args.steering_method == "contrast":
         premise, negated = extract_premise_and_negation(problem_dict, step_idx=0)
         if premise and negated:
             if args.verbose:
-                print(f"  Premise: {premise}")
-                print(f"  Negated: {negated}")
+                print(f"  Constructing contrast vector from negation")
+                print(f"    Premise: {premise}")
+                print(f"    Negated: {negated}")
             
+            n_hops = problem_dict.get("n_hops", len(problem_dict.get("steps", [])))
             steering_vector = construct_contrast_vector_from_negation(
                 model, tokenizer, premise, negated,
-                latent_id, start_id, end_id,
-                problem_dict.get("n_hops", len(problem_dict.get("steps", []))),
-                step_to_extract=0, layer=-1, device=args.device
+                0, n_hops, latent_id, start_id, end_id, args.device
             )
+            if steering_vector is not None:
+                vector_source = "contrast"
     
     # Fall back to embedding difference
     if steering_vector is None:
@@ -109,6 +124,7 @@ def run_coconut_experiment(
         steering_vector = construct_contrast_vector_from_embeddings(
             model, tokenizer, concept_a, concept_b
         )
+        vector_source = "embedding"
     
     if steering_vector is None:
         print("  Failed to construct steering vector")
@@ -119,8 +135,17 @@ def run_coconut_experiment(
         model, tokenizer, problem_dict, concept_a, concept_b,
         alphas=args.alphas, device=args.device,
         latent_id=latent_id, start_id=start_id, end_id=end_id,
-        steering_vector=steering_vector, sweep_dim=args.sweep_dim
+        steering_vector=steering_vector, sweep_dim=args.sweep_dim,
+        random_control=args.random_control
     )
+    
+    # Add metadata about vector source
+    if sweep_results:
+        for config_name in sweep_results:
+            if isinstance(sweep_results[config_name], dict):
+                if 'metadata' in sweep_results[config_name]:
+                    sweep_results[config_name]['metadata']['vector_source'] = vector_source
+                    sweep_results[config_name]['metadata']['random_control'] = args.random_control
     
     return sweep_results
 
@@ -153,15 +178,7 @@ def run_verbal_experiment(
 
 
 def load_model_safe(model_type: str, checkpoint_path: str, device: str):
-    """
-    Safely load model without changing directory.
-    
-    Args:
-        model_type: Either 'coconut' or 'verbal'
-        checkpoint_path: Path to checkpoint (relative to PROJECT_ROOT)
-        device: Device to load on
-    """
-    # Build absolute path
+    """Safely load model without changing directory."""
     abs_path = os.path.join(PROJECT_ROOT, checkpoint_path)
     
     if model_type == "coconut":
@@ -182,7 +199,8 @@ def main():
     # Create experiment name if not provided
     if args.experiment_name is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        args.experiment_name = f"{args.model_type}_{args.sweep_dim}_{timestamp}"
+        control_suffix = "_random_control" if args.random_control else ""
+        args.experiment_name = f"{args.model_type}_{args.sweep_dim}_{args.steering_method}{control_suffix}_{timestamp}"
     
     # Create output directory
     output_dir = os.path.join(args.output_dir, args.experiment_name)
@@ -197,20 +215,31 @@ def main():
     print("="*60)
     print(f"Model type: {args.model_type}")
     print(f"Sweep dimension: {args.sweep_dim}")
+    print(f"Steering method: {args.steering_method}")
+    print(f"Random control: {args.random_control}")
     print(f"Alphas: {args.alphas}")
     print(f"Output directory: {output_dir}")
     print(f"Device: {args.device}")
-    print(f"Project root: {PROJECT_ROOT}")
     
     # Load data
     data_path = os.path.join(PROJECT_ROOT, args.data_path)
     print(f"\nLoading data from {data_path} ({args.data_split} split)")
     df = load_prontoqa(data_path, split=args.data_split)
     
+    # Filter by hop count if specified
+    if args.hop_filter:
+        df = df[df['n_hops'].isin(args.hop_filter)]
+        print(f"Filtered to hop counts: {args.hop_filter}")
+        print(f"Remaining problems: {len(df)}")
+    
     # Select problems
     end_idx = min(args.start_idx + args.n_problems, len(df))
     df_selected = df.iloc[args.start_idx:end_idx].reset_index(drop=True)
     print(f"Selected {len(df_selected)} problems (indices {args.start_idx}-{end_idx-1})")
+    
+    # Show hop distribution
+    hop_counts = df_selected['n_hops'].value_counts().sort_index()
+    print(f"Hop distribution: {dict(hop_counts)}")
     
     # Load models
     models_loaded = {}
@@ -274,6 +303,8 @@ def main():
             "data_split": args.data_split,
             "n_problems": len(df_selected),
             "start_idx": args.start_idx,
+            "hop_filter": args.hop_filter,
+            "hop_distribution": dict(hop_counts),
         },
         "results": []
     }
@@ -290,6 +321,7 @@ def main():
             
             if args.verbose:
                 print(f"\nProblem {args.start_idx + idx}: {problem_dict.get('n_hops', '?')} hops")
+                print(f"  Question: {problem_dict.get('question', '')[:100]}...")
             
             try:
                 if model_type == "coconut":
@@ -308,17 +340,30 @@ def main():
                 
                 if result:
                     # Remove large activation data if not requested
-                    if not args.save_activations:
+                    if not args.save_activations and not args.save_latent_vectors:
                         for config_name, config_results in result.items():
                             if isinstance(config_results, dict):
                                 for alpha, res in config_results.items():
-                                    if isinstance(res, dict) and "steered_activations" in res:
-                                        del res["steered_activations"]
+                                    if isinstance(res, dict):
+                                        if "steered_activations" in res:
+                                            del res["steered_activations"]
+                    
+                    # Check if steering propagated
+                    propagation_check = False
+                    if model_type == "coconut":
+                        for config_name, config_results in result.items():
+                            if isinstance(config_results, dict) and 'metadata' in config_results:
+                                if config_results['metadata'].get('steering_propagated', False):
+                                    propagation_check = True
+                                    break
                     
                     all_results["results"].append({
                         "model_type": model_type,
                         "problem_idx": args.start_idx + idx,
                         "n_hops": problem_dict.get("n_hops", 0),
+                        "question": problem_dict.get("question", "")[:200],
+                        "true_answer": problem_dict.get("answer", ""),
+                        "steering_propagated": propagation_check,
                         "sweep_results": result
                     })
                 else:
@@ -343,6 +388,8 @@ def main():
             "experiment_name": args.experiment_name,
             "model_type": args.model_type,
             "sweep_dim": args.sweep_dim,
+            "steering_method": args.steering_method,
+            "random_control": args.random_control,
             "n_problems": len(df_selected),
         }
     )
@@ -356,6 +403,14 @@ def main():
     for model_type in models_loaded.keys():
         model_results = [r for r in all_results["results"] if r["model_type"] == model_type]
         print(f"  {model_type}: {len(model_results)} results")
+        
+        # Check propagation for Coconut
+        if model_type == "coconut":
+            propagated = sum(1 for r in model_results if r.get("steering_propagated", False))
+            if propagated > 0:
+                print(f"    Steering propagated: {propagated}/{len(model_results)} problems")
+            else:
+                print(f"    WARNING: Steering did not propagate in any problem!")
 
 
 if __name__ == "__main__":
