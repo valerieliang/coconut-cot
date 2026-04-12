@@ -1,7 +1,7 @@
 # src/coconut_steering.py
 """
 Fixed Coconut steering with persistent latent vector manipulation.
-Implements introspection-aware steering based on metacognition principles.
+Includes fixes for propagation detection and steering strength.
 """
 
 import torch
@@ -136,7 +136,8 @@ def construct_contrast_vector_from_negation(
     
     delta = v_minus - v_plus
     delta_norm = torch.norm(delta).item()
-    delta = delta / (delta_norm + 1e-8)
+    if delta_norm > 1e-8:
+        delta = delta / delta_norm
     
     return delta
 
@@ -180,8 +181,8 @@ def check_steering_propagation(
     baseline_latents: Optional[List[torch.Tensor]] = None
 ) -> Tuple[bool, Dict]:
     """
-    Check if steering actually changed the trajectory.
-    Uses multiple criteria for robust detection.
+    FIXED: Check if steering actually changed the trajectory.
+    Now uses stricter criteria for propagation detection.
     """
     if len(latent_vectors) <= target_step:
         return False, {'error': 'Not enough latent vectors'}
@@ -212,6 +213,14 @@ def check_steering_propagation(
             ).item()
             metrics['steer_vs_baseline_cos'] = steer_vs_baseline_cos
             
+            # FIXED: Stricter propagation criteria
+            # Need at least 10% change in norm OR 0.1 change in cosine similarity
+            norm_changed = abs(norm_ratio - 1.0) > 0.10  # Was 0.005
+            vector_changed = steer_vs_baseline_cos < 0.90  # Was 0.995
+            
+            propagated = norm_changed or vector_changed
+            
+            # Check downstream effect if available
             if len(latent_vectors) > target_step + 1 and len(baseline_latents) > target_step + 1:
                 next_vec = latent_vectors[target_step + 1].squeeze()
                 baseline_next = baseline_latents[target_step + 1].squeeze()
@@ -227,24 +236,12 @@ def check_steering_propagation(
                 ).item()
                 metrics['next_vs_baseline_cos'] = next_vs_baseline_next_cos
                 
-                # Lenient propagation criteria
-                norm_changed = abs(norm_ratio - 1.0) > 0.005
-                vector_changed = steer_vs_baseline_cos < 0.995
-                next_changed = next_vs_baseline_next_cos < 0.995
-                
-                propagated = (norm_changed or vector_changed) and next_changed
-                
-                if abs(norm_ratio - 1.0) > 0.1:
-                    propagated = True
-                    metrics['propagated_by_norm'] = True
-            else:
-                norm_changed = abs(norm_ratio - 1.0) > 0.005
-                vector_changed = steer_vs_baseline_cos < 0.995
-                propagated = norm_changed or vector_changed
+                # Propagation requires downstream change
+                next_changed = next_vs_baseline_next_cos < 0.95
+                propagated = propagated and next_changed
                 
         except Exception as e:
             metrics['error'] = str(e)
-            propagated = abs(norm_ratio - 1.0) > 0.01
     else:
         propagated = False
         metrics['note'] = 'no baseline for comparison'
@@ -259,7 +256,7 @@ def generate_with_introspection_aware_steering(
     n_hops: int,
     steering_config: Dict,
     norm_mode: str = 'activation',
-    acceptance_threshold: float = 0.1,
+    acceptance_threshold: float = 0.5,  # FIXED: Higher threshold = more steering
     verbose: bool = False,
 ) -> Tuple[torch.Tensor, List[torch.Tensor], Dict]:
     """Custom generation with introspection-aware steering."""
@@ -304,19 +301,26 @@ def generate_with_introspection_aware_steering(
             current_hidden = layer(current_hidden)[0]
         
         latent_vec = current_hidden[:, -1, :].clone()
+        
+        # FIXED: Support per-step vectors
+        step_vectors = steering_config.get('step_vectors', {})
+        step_vec = step_vectors.get(step, steering_vec)
+        
         should_steer = (steer_all and step >= target_step) or (step == target_step)
         
-        if should_steer and steering_vec is not None and alpha != 0.0:
+        if should_steer and step_vec is not None and alpha != 0.0:
             steering_info['steered_step'] = step
             steering_info['pre_steer'] = latent_vec.clone()
             steering_info['steering_applied'] = True
             
-            delta = steering_vec.to(device=device, dtype=latent_vec.dtype)
+            delta = step_vec.to(device=device, dtype=latent_vec.dtype)
             
+            # FIXED: Stronger steering scaling
             if norm_mode == 'activation':
                 activation_norm = torch.norm(latent_vec)
                 if activation_norm > 1e-6:
-                    scaled_delta = delta * alpha * activation_norm
+                    # Scale by activation norm to have consistent effect across steps
+                    scaled_delta = delta * alpha * (activation_norm / torch.norm(delta) + 1e-8)
                 else:
                     scaled_delta = delta * alpha
             else:
@@ -326,18 +330,23 @@ def generate_with_introspection_aware_steering(
             surprise_metrics = compute_steering_surprise(latent_vec, steered_candidate)
             steering_info['surprise_metrics'].append(surprise_metrics)
             
+            # FIXED: Higher acceptance threshold means more steering
             if use_blending and surprise_metrics['total_surprise'] > acceptance_threshold:
+                # Less aggressive blending when surprise is high
                 blend_ratio = min(1.0, acceptance_threshold / (surprise_metrics['total_surprise'] + 1e-8))
+                # FIXED: Blend less when alpha is large (more aggressive steering)
+                if alpha > 100:
+                    blend_ratio = blend_ratio * 0.5  # Half the blending for large alphas
                 steered_vec = (1 - blend_ratio) * latent_vec + blend_ratio * steered_candidate
                 steering_info['blend_ratios'].append(blend_ratio)
                 
                 if verbose:
                     print(f"  [BLEND] Step {step}: surprise={surprise_metrics['total_surprise']:.4f}, "
-                          f"blend={blend_ratio:.3f}")
+                          f"blend={blend_ratio:.3f}, alpha={alpha}")
             else:
                 steered_vec = steered_candidate
                 if verbose:
-                    print(f"  [STEER] Step {step}: accepted (surprise={surprise_metrics['total_surprise']:.4f})")
+                    print(f"  [STEER] Step {step}: alpha={alpha}, surprise={surprise_metrics['total_surprise']:.4f}")
             
             steering_info['post_steer'] = steered_vec.clone()
             latent_vec = steered_vec
@@ -367,17 +376,18 @@ def run_steering_with_persistence(
     start_id: Optional[int] = None,
     end_id: Optional[int] = None,
     steering_vector: Optional[torch.Tensor] = None,
+    step_vectors: Optional[Dict[int, torch.Tensor]] = None,  # FIXED: New parameter
     target_step: int = 0,
     steer_all: bool = False,
     random_control: bool = False,
     norm_mode: str = 'activation',
     use_blending: bool = True,
-    acceptance_threshold: float = 0.1,
+    acceptance_threshold: float = 0.5,
     verbose: bool = False,
 ) -> Optional[Dict]:
     """Run steering with persistent latent vector manipulation."""
     if alphas is None:
-        alphas = [0.0, 1.0, 2.0, 5.0, 10.0]
+        alphas = [0.0, 50.0, 100.0, 200.0, 500.0, 1000.0]  # FIXED: Larger alphas
     
     tokens_a = tokenizer.encode(" " + concept_a, add_special_tokens=False)
     tokens_b = tokenizer.encode(" " + concept_b, add_special_tokens=False)
@@ -387,21 +397,37 @@ def run_steering_with_persistence(
     if token_id_a is None or token_id_b is None:
         return None
     
-    if steering_vector is not None:
-        if isinstance(steering_vector, np.ndarray):
-            direction = torch.from_numpy(steering_vector).float()
-        else:
-            direction = steering_vector.float()
+    # FIXED: Handle step_vectors parameter
+    if step_vectors is not None:
+        # Use per-step vectors
+        direction_dict = {}
+        for step, vec in step_vectors.items():
+            if isinstance(vec, np.ndarray):
+                direction_dict[step] = torch.from_numpy(vec).float().to(device)
+            else:
+                direction_dict[step] = vec.float().to(device)
+            
+            if random_control:
+                rand_vec = torch.randn_like(direction_dict[step])
+                direction_dict[step] = rand_vec / (torch.norm(rand_vec) + 1e-8)
     else:
-        direction = construct_contrast_vector_from_embeddings(model, tokenizer, concept_a, concept_b)
-        if direction is None:
-            return None
-    
-    if random_control:
-        direction = torch.randn_like(direction)
-        direction = direction / torch.norm(direction)
-    
-    direction = direction.to(device)
+        # Use single vector
+        if steering_vector is not None:
+            if isinstance(steering_vector, np.ndarray):
+                direction = torch.from_numpy(steering_vector).float()
+            else:
+                direction = steering_vector.float()
+        else:
+            direction = construct_contrast_vector_from_embeddings(model, tokenizer, concept_a, concept_b)
+            if direction is None:
+                return None
+        
+        if random_control:
+            direction = torch.randn_like(direction)
+            direction = direction / (torch.norm(direction) + 1e-8)
+        
+        direction = direction.to(device)
+        direction_dict = {i: direction for i in range(10)}  # Replicate for all steps
     
     question = problem_row["question"]
     n_hops = problem_row.get("n_hops", len(problem_row.get("steps", [])))
@@ -419,7 +445,8 @@ def run_steering_with_persistence(
         with torch.no_grad():
             steering_cfg = {
                 'step': target_step,
-                'vector': direction,
+                'vector': steering_vector,
+                'step_vectors': direction_dict,  # FIXED: Pass per-step vectors
                 'alpha': alpha,
                 'steer_all': steer_all,
                 'use_blending': use_blending,
@@ -526,16 +553,18 @@ def run_steering_sweep(
     start_id: Optional[int] = None,
     end_id: Optional[int] = None,
     steering_vector: Optional[torch.Tensor] = None,
+    step_vectors: Optional[Dict[int, torch.Tensor]] = None,  # FIXED: New parameter
     sweep_dim: str = 'step',
     random_control: bool = False,
     norm_mode: str = 'activation',
     use_blending: bool = True,
-    acceptance_threshold: float = 0.1,
+    acceptance_threshold: float = 0.5,
+    steer_all: bool = False,
     verbose: bool = False,
 ) -> Dict:
     """Run a systematic sweep over intervention parameters."""
     if alphas is None:
-        alphas = [0.0, 1.0, 2.0, 5.0, 10.0]
+        alphas = [0.0, 50.0, 100.0, 200.0, 500.0, 1000.0]  # FIXED: Larger alphas
     
     n_hops = problem_row.get("n_hops", len(problem_row.get("steps", [])))
     sweep_results = {}
@@ -548,7 +577,10 @@ def run_steering_sweep(
                 model, tokenizer, problem_row, concept_a, concept_b,
                 alphas=alphas, device=device, latent_id=latent_id,
                 start_id=start_id, end_id=end_id,
-                steering_vector=steering_vector, target_step=step,
+                steering_vector=steering_vector,
+                step_vectors=step_vectors,  # FIXED: Pass through
+                target_step=step,
+                steer_all=steer_all,
                 random_control=random_control, norm_mode=norm_mode,
                 use_blending=use_blending, acceptance_threshold=acceptance_threshold,
                 verbose=verbose
@@ -564,8 +596,11 @@ def run_steering_sweep(
                 model, tokenizer, problem_row, concept_a, concept_b,
                 alphas=alphas, device=device, latent_id=latent_id,
                 start_id=start_id, end_id=end_id,
-                steering_vector=steering_vector, target_step=step,
-                steer_all=True, random_control=random_control, norm_mode=norm_mode,
+                steering_vector=steering_vector,
+                step_vectors=step_vectors,  # FIXED: Pass through
+                target_step=step,
+                steer_all=True,
+                random_control=random_control, norm_mode=norm_mode,
                 use_blending=use_blending, acceptance_threshold=acceptance_threshold,
                 verbose=verbose
             )
@@ -586,7 +621,7 @@ def run_steering(
     latent_id=None, start_id=None, end_id=None, steering_vector=None,
 ):
     if alphas is None:
-        alphas = [0.0, 1.0, 2.0, 5.0, 10.0]
+        alphas = [0.0, 50.0, 100.0, 200.0, 500.0, 1000.0]  # FIXED
     
     return run_steering_with_persistence(
         model, tokenizer, problem_row, concept_a, concept_b,

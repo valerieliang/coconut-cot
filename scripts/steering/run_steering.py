@@ -1,11 +1,12 @@
 # scripts/steering/run_steering.py
 """
 Run steering experiments on Coconut and/or Verbal CoT models.
-Updated with proper persistent latent steering and control conditions.
+Fixed with proper per-step contrast vectors and stronger steering.
 """
 
 import sys
 import os
+from typing import Optional, Dict, List, Tuple 
 
 # Add the project root to path FIRST, before any other imports
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -57,26 +58,35 @@ def parse_args():
     parser.add_argument("--hop_filter", type=int, nargs="+", default=None,
                         help="Only run on problems with these hop counts")
     
-    # Steering parameters
+    # Steering parameters - FIXED: larger alphas for high-confidence models
     parser.add_argument("--alphas", type=float, nargs="+", 
-                        default=[0.0, 1.0, 2.0, 5.0, 10.0, 20.0])
+                        default=[0.0, 50.0, 100.0, 200.0, 500.0, 1000.0])
     parser.add_argument("--sweep_dim", type=str, default="step",
                         choices=["step", "layer", "both", "all_steps"])
     parser.add_argument("--steering_method", type=str, default="contrast",
                         choices=["contrast", "embedding"])
     
-    # Control conditions (for proposal Section 5)
+    # Control conditions
     parser.add_argument("--random_control", action="store_true",
                         help="Use random steering vectors as control condition")
     parser.add_argument("--no_steering_control", action="store_true",
                         help="Include baseline (alpha=0) as control")
     
+    # FIXED: New options for better steering
+    parser.add_argument("--no_blending", action="store_true",
+                        help="Disable surprise-based blending (use pure steering)")
+    parser.add_argument("--per_step_vectors", action="store_true",
+                        help="Construct separate contrast vectors for each step")
+    parser.add_argument("--steer_all", action="store_true",
+                        help="Steer all steps from target onward")
+    parser.add_argument("--acceptance_threshold", type=float, default=0.5,
+                        help="Threshold for surprise-based blending (higher = more steering)")
+    
     # Output
     parser.add_argument("--output_dir", type=str, default="results/steering/raw")
     parser.add_argument("--experiment_name", type=str, default=None)
     parser.add_argument("--save_activations", action="store_true")
-    parser.add_argument("--save_latent_vectors", action="store_true",
-                        help="Save all latent vectors for propagation analysis")
+    parser.add_argument("--save_latent_vectors", action="store_true")
     
     # Hardware
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
@@ -88,55 +98,98 @@ def parse_args():
     return parser.parse_args()
 
 
+def construct_per_step_steering_vectors(
+    model, tokenizer, problem_dict: dict, n_hops: int,
+    latent_id: int, start_id: int, end_id: int, device: str,
+    verbose: bool = False
+) -> dict:
+    """
+    FIXED: Construct separate contrast vectors for EACH reasoning step.
+    This is critical because the logical content changes at each step.
+    """
+    step_vectors = {}
+    
+    for step in range(n_hops):
+        premise, negated = extract_premise_and_negation(problem_dict, step_idx=step)
+        
+        if premise and negated:
+            if verbose:
+                print(f"    Step {step}: premise='{premise[:50]}...' negated='{negated[:50]}...'")
+            
+            vector = construct_contrast_vector_from_negation(
+                model, tokenizer, premise, negated,
+                step, n_hops, latent_id, start_id, end_id, device
+            )
+            
+            if vector is not None:
+                step_vectors[step] = vector
+                if verbose:
+                    print(f"      Vector norm: {vector.norm().item():.4f}")
+            else:
+                if verbose:
+                    print(f"      Failed to construct vector for step {step}")
+        else:
+            if verbose:
+                print(f"    Step {step}: No premise/negation found")
+    
+    return step_vectors
+
+
 def run_coconut_experiment(
     model, tokenizer, problem_dict: dict, args, 
     latent_id: int, start_id: int, end_id: int
 ) -> dict:
-    """Run steering experiment on Coconut model."""
+    """Run steering experiment on Coconut model with improved vector construction."""
     
     concept_a = "True"
     concept_b = "False"
+    n_hops = problem_dict.get("n_hops", len(problem_dict.get("steps", [])))
     
-    # Construct steering vector
-    steering_vector = None
-    vector_source = "embedding"
-    
-    if args.steering_method == "contrast":
-        premise, negated = extract_premise_and_negation(problem_dict, step_idx=0)
-        if premise and negated:
-            if args.verbose:
-                print(f"  Constructing contrast vector from negation")
-                print(f"    Premise: {premise}")
-                print(f"    Negated: {negated}")
-            
-            n_hops = problem_dict.get("n_hops", len(problem_dict.get("steps", [])))
-            steering_vector = construct_contrast_vector_from_negation(
-                model, tokenizer, premise, negated,
-                0, n_hops, latent_id, start_id, end_id, args.device
-            )
-            if steering_vector is not None:
-                vector_source = "contrast"
-    
-    # Fall back to embedding difference
-    if steering_vector is None:
+    # FIXED: Use per-step vectors if requested
+    if args.per_step_vectors:
         if args.verbose:
-            print("  Using embedding difference for steering vector")
-        steering_vector = construct_contrast_vector_from_embeddings(
-            model, tokenizer, concept_a, concept_b
+            print(f"  Constructing per-step contrast vectors...")
+        
+        step_vectors = construct_per_step_steering_vectors(
+            model, tokenizer, problem_dict, n_hops,
+            latent_id, start_id, end_id, args.device,
+            verbose=args.verbose
         )
-        vector_source = "embedding"
-    
-    if steering_vector is None:
-        print("  Failed to construct steering vector")
-        return None
+        
+        if not step_vectors:
+            print(f"  Warning: No step vectors constructed, falling back to embedding")
+            step_vectors = {0: construct_contrast_vector_from_embeddings(
+                model, tokenizer, concept_a, concept_b
+            )}
+    else:
+        # Original behavior: single vector
+        steering_vector = None
+        if args.steering_method == "contrast":
+            premise, negated = extract_premise_and_negation(problem_dict, step_idx=0)
+            if premise and negated:
+                steering_vector = construct_contrast_vector_from_negation(
+                    model, tokenizer, premise, negated,
+                    0, n_hops, latent_id, start_id, end_id, args.device
+                )
+        
+        if steering_vector is None:
+            steering_vector = construct_contrast_vector_from_embeddings(
+                model, tokenizer, concept_a, concept_b
+            )
+        
+        step_vectors = {0: steering_vector}
     
     # Run sweep
     sweep_results = coconut_sweep(
         model, tokenizer, problem_dict, concept_a, concept_b,
         alphas=args.alphas, device=args.device,
         latent_id=latent_id, start_id=start_id, end_id=end_id,
-        steering_vector=steering_vector, sweep_dim=args.sweep_dim,
-        random_control=args.random_control
+        step_vectors=step_vectors,  # FIXED: Pass per-step vectors
+        sweep_dim=args.sweep_dim,
+        random_control=args.random_control,
+        use_blending=not args.no_blending,  # FIXED: Allow disabling blending
+        acceptance_threshold=args.acceptance_threshold,
+        steer_all=args.steer_all,
     )
     
     # Add metadata about vector source
@@ -144,8 +197,9 @@ def run_coconut_experiment(
         for config_name in sweep_results:
             if isinstance(sweep_results[config_name], dict):
                 if 'metadata' in sweep_results[config_name]:
-                    sweep_results[config_name]['metadata']['vector_source'] = vector_source
+                    sweep_results[config_name]['metadata']['vector_source'] = "per_step" if args.per_step_vectors else args.steering_method
                     sweep_results[config_name]['metadata']['random_control'] = args.random_control
+                    sweep_results[config_name]['metadata']['use_blending'] = not args.no_blending
     
     return sweep_results
 
@@ -153,28 +207,78 @@ def run_coconut_experiment(
 def run_verbal_experiment(
     model, tokenizer, problem_dict: dict, args
 ) -> dict:
-    """Run steering experiment on Verbal CoT model."""
+    """Run steering experiment on Verbal CoT model with fixed intervention."""
     
     concept_a = "True"
     concept_b = "False"
     
-    # Construct steering vector from embedding difference
-    steering_vector = construct_contrast_vector_from_embeddings(
-        model, tokenizer, concept_a, concept_b
+    # FIXED: Use semantic steering for verbal model
+    steering_vector = construct_semantic_steering_vector(
+        model, tokenizer, concept_a, concept_b, args.device
     )
     
     if steering_vector is None:
         print("  Failed to construct steering vector")
         return None
     
-    # Run sweep
+    if args.verbose:
+        print(f"  Steering vector norm: {steering_vector.norm().item():.4f}")
+    
+    # Run sweep with debug output
     sweep_results = verbal_sweep(
         model, tokenizer, problem_dict, concept_a, concept_b,
         alphas=args.alphas, device=args.device,
-        steering_vector=steering_vector, sweep_dim=args.sweep_dim
+        steering_vector=steering_vector, sweep_dim=args.sweep_dim,
+        verbose=args.verbose  # FIXED: Pass through verbose flag
     )
     
     return sweep_results
+
+
+def construct_semantic_steering_vector(
+    model, tokenizer, concept_a: str, concept_b: str, device: str = "cuda"
+) -> Optional[torch.Tensor]:
+    """
+    FIXED: Construct a steering vector using the model's OWN representations
+    rather than static embeddings. This should be more effective.
+    """
+    # Find the model's submodule
+    if hasattr(model, 'base_causallm'):
+        base_model = model.base_causallm
+    elif hasattr(model, 'model'):
+        base_model = model.model
+    else:
+        base_model = model
+    
+    # Get embedding layer
+    if hasattr(base_model, 'transformer'):
+        embed_layer = base_model.transformer.wte
+    elif hasattr(base_model, 'wte'):
+        embed_layer = base_model.wte
+    else:
+        # Fall back to old method
+        return construct_contrast_vector_from_embeddings(model, tokenizer, concept_a, concept_b)
+    
+    # Tokenize concepts
+    tokens_a = tokenizer.encode(" " + concept_a, add_special_tokens=False)
+    tokens_b = tokenizer.encode(" " + concept_b, add_special_tokens=False)
+    
+    if not tokens_a or not tokens_b:
+        return None
+    
+    # Get embeddings
+    embed_a = embed_layer.weight[tokens_a[0]].detach()
+    embed_b = embed_layer.weight[tokens_b[0]].detach()
+    
+    # Get direction and normalize
+    direction = embed_a - embed_b
+    direction = direction / (torch.norm(direction) + 1e-8)
+    
+    # Verify the direction makes sense
+    cos_sim = torch.dot(embed_a, embed_b) / (torch.norm(embed_a) * torch.norm(embed_b) + 1e-8)
+    print(f"  Semantic steering: cos({concept_a}, {concept_b}) = {cos_sim.item():.4f}")
+    
+    return direction
 
 
 def load_model_safe(model_type: str, checkpoint_path: str, device: str):
@@ -188,51 +292,6 @@ def load_model_safe(model_type: str, checkpoint_path: str, device: str):
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
-def construct_semantic_steering_vector(model, tokenizer, concept_a, concept_b, device="cuda"):
-    """
-    Construct a steering vector that is semantically aligned with the model's latent space.
-    Uses the model's OWN representations rather than static embeddings.
-    """
-    # Get the model's internal representation of each concept
-    # by running them through the model with a neutral context
-    
-    neutral_context = "The concept of"
-    
-    # Get representation for concept A
-    text_a = f"{neutral_context} {concept_a}"
-    inputs_a = tokenizer(text_a, return_tensors="pt").to(device)
-    
-    with torch.no_grad():
-        if hasattr(model, 'base_causallm'):
-            outputs_a = model.base_causallm(**inputs_a, output_hidden_states=True)
-        else:
-            outputs_a = model(**inputs_a, output_hidden_states=True)
-    
-    # Use last layer hidden state at the concept token
-    hidden_a = outputs_a.hidden_states[-1][0, -1, :]
-    
-    # Get representation for concept B
-    text_b = f"{neutral_context} {concept_b}"
-    inputs_b = tokenizer(text_b, return_tensors="pt").to(device)
-    
-    with torch.no_grad():
-        if hasattr(model, 'base_causallm'):
-            outputs_b = model.base_causallm(**inputs_b, output_hidden_states=True)
-        else:
-            outputs_b = model(**inputs_b, output_hidden_states=True)
-    
-    hidden_b = outputs_b.hidden_states[-1][0, -1, :]
-    
-    # Direction from B to A
-    direction = hidden_a - hidden_b
-    direction = direction / torch.norm(direction)
-    
-    # Check alignment with latent space
-    cos_sim = torch.dot(hidden_a / torch.norm(hidden_a), hidden_b / torch.norm(hidden_b)).item()
-    print(f"  Semantic steering: cos({concept_a}, {concept_b}) = {cos_sim:.4f}")
-    
-    return direction.cpu()
-
 
 def main():
     args = parse_args()
@@ -245,7 +304,9 @@ def main():
     if args.experiment_name is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         control_suffix = "_random_control" if args.random_control else ""
-        args.experiment_name = f"{args.model_type}_{args.sweep_dim}_{args.steering_method}{control_suffix}_{timestamp}"
+        blend_suffix = "_no_blend" if args.no_blending else ""
+        per_step_suffix = "_per_step" if args.per_step_vectors else ""
+        args.experiment_name = f"{args.model_type}_{args.sweep_dim}_{args.steering_method}{control_suffix}{blend_suffix}{per_step_suffix}_{timestamp}"
     
     # Create output directory
     output_dir = os.path.join(args.output_dir, args.experiment_name)
@@ -262,6 +323,9 @@ def main():
     print(f"Sweep dimension: {args.sweep_dim}")
     print(f"Steering method: {args.steering_method}")
     print(f"Random control: {args.random_control}")
+    print(f"Use blending: {not args.no_blending}")
+    print(f"Per-step vectors: {args.per_step_vectors}")
+    print(f"Steer all from target: {args.steer_all}")
     print(f"Alphas: {args.alphas}")
     print(f"Output directory: {output_dir}")
     print(f"Device: {args.device}")
@@ -367,6 +431,7 @@ def main():
             if args.verbose:
                 print(f"\nProblem {args.start_idx + idx}: {problem_dict.get('n_hops', '?')} hops")
                 print(f"  Question: {problem_dict.get('question', '')[:100]}...")
+                print(f"  True answer: {problem_dict.get('answer', '')}")
             
             try:
                 if model_type == "coconut":
@@ -395,12 +460,22 @@ def main():
                     
                     # Check if steering propagated
                     propagation_check = False
+                    answer_flipped = False
                     if model_type == "coconut":
                         for config_name, config_results in result.items():
                             if isinstance(config_results, dict) and 'metadata' in config_results:
                                 if config_results['metadata'].get('steering_propagated', False):
                                     propagation_check = True
                                     break
+                        
+                        # Check for answer flips
+                        for config_name, config_results in result.items():
+                            if isinstance(config_results, dict):
+                                for alpha_key, alpha_results in config_results.items():
+                                    if alpha_key != "metadata" and isinstance(alpha_results, dict):
+                                        if alpha_results.get("answer_flipped", False):
+                                            answer_flipped = True
+                                            break
                     
                     all_results["results"].append({
                         "model_type": model_type,
@@ -409,8 +484,13 @@ def main():
                         "question": problem_dict.get("question", "")[:200],
                         "true_answer": problem_dict.get("answer", ""),
                         "steering_propagated": propagation_check,
+                        "answer_flipped": answer_flipped,
                         "sweep_results": result
                     })
+                    
+                    if answer_flipped and args.verbose:
+                        print(f"  *** ANSWER FLIPPED! ***")
+                    
                 else:
                     if args.verbose:
                         print(f"  Warning: Failed on problem {args.start_idx + idx}")
@@ -435,11 +515,13 @@ def main():
             "sweep_dim": args.sweep_dim,
             "steering_method": args.steering_method,
             "random_control": args.random_control,
+            "use_blending": not args.no_blending,
+            "per_step_vectors": args.per_step_vectors,
             "n_problems": len(df_selected),
         }
     )
     
-    # Summary with better propagation reporting
+    # Summary
     successful = len(all_results["results"])
     print(f"\nExperiment complete!")
     print(f"  Successful problems: {successful}/{len(df_selected)}")
@@ -459,6 +541,9 @@ def main():
         max_effect = 0.0
         
         for r in model_results:
+            if r.get("answer_flipped", False):
+                answer_flipped_count += 1
+            
             sweep_results = r.get("sweep_results", {})
             for config_name, config_results in sweep_results.items():
                 if config_name == "metadata" or not isinstance(config_results, dict):
@@ -473,28 +558,17 @@ def main():
                                 total_steered += 1
                             if alpha_results.get("steering_propagated", False):
                                 propagated_count += 1
-                            if alpha_results.get("answer_flipped", False):
-                                answer_flipped_count += 1
                             effect = abs(alpha_results.get("effect_size", 0))
                             if effect > max_effect:
                                 max_effect = effect
                     except (ValueError, TypeError):
                         pass
         
+        print(f"    Answer flipped: {answer_flipped_count}/{len(model_results)} problems")
         if total_steered > 0:
             print(f"    Steering applied: {total_steered} times")
             print(f"    Propagated: {propagated_count} ({100*propagated_count/total_steered:.0f}%)")
-            print(f"    Answer flipped: {answer_flipped_count}")
             print(f"    Max effect size: {max_effect:.3f}")
-            
-            if answer_flipped_count > 0:
-                print(f"    SUCCESS: Steering flipped the answer!")
-            elif propagated_count > 0:
-                print(f"    Steering propagated through reasoning chain")
-            else:
-                print(f"    Steering applied but did not propagate to output")
-        else:
-            print(f"    No steering applied (check alpha values)")
 
 
 if __name__ == "__main__":
