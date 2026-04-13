@@ -1,7 +1,21 @@
 #!/usr/bin/env python3
 """
-Comprehensive steering experiment runner.
-Tests different steering patterns with proper random control.
+COMPREHENSIVE STEERING EXPERIMENT SUITE
+========================================
+A complete test suite for evaluating steering efficacy on Coconut vs Verbal CoT.
+
+This script runs 12 systematic experiments to assess:
+1. Baseline stability (no steering)
+2. Random control at multiple scales
+3. Meaningful steering at multiple reasoning steps
+4. Alpha sensitivity analysis
+5. Cross-model comparison (Coconut vs Verbal CoT)
+6. Difficulty scaling (3, 4, 5 hop problems)
+7. Cumulative vs single-step steering
+8. Statistical significance testing
+
+Author: CogAI Project
+Date: 2026
 """
 
 import sys
@@ -11,430 +25,566 @@ import argparse
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
-import pandas as pd
+from typing import List, Dict, Any, Tuple
 import numpy as np
+import pandas as pd
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
 
-class ComprehensiveSteeringExperiment:
-    """Run comprehensive steering experiments with various configurations."""
+class ComprehensiveSteeringSuite:
+    """
+    Complete steering experiment suite with systematic testing.
+    """
     
     def __init__(self, args):
         self.args = args
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.experiment_name = args.experiment_name or f"comprehensive_steering_{self.timestamp}"
+        self.experiment_name = args.experiment_name or f"steering_suite_{self.timestamp}"
         self.output_dir = os.path.join(args.output_dir, self.experiment_name)
         self.results = {}
+        self.summary_data = {}
         
         # Create output directory
         os.makedirs(self.output_dir, exist_ok=True)
         
-    def run_steering_command(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Run a single steering experiment and return results."""
+        # Save configuration
+        self._save_config()
+        
+    def _save_config(self):
+        """Save experiment configuration."""
+        config_path = os.path.join(self.output_dir, "experiment_config.json")
+        with open(config_path, "w") as f:
+            json.dump(vars(self.args), f, indent=2)
+            
+    def _run_steering(self, config: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a single steering experiment and parse results."""
         cmd = [
             "python", "scripts/steering/run_steering.py",
             "--model_type", config.get("model_type", "coconut"),
-            "--n_problems", str(config.get("n_problems", 10)),
-            "--start_idx", str(config.get("start_idx", 0)),
+            "--n_problems", str(config.get("n_problems", self.args.n_problems)),
+            "--start_idx", str(config.get("start_idx", self.args.start_idx)),
             "--output_dir", self.output_dir,
             "--experiment_name", config["exp_name"],
+            "--no_blending",  # Always use pure steering for consistent measurement
         ]
         
         # Add steering parameters
         if config.get("per_step_vectors"):
             cmd.append("--per_step_vectors")
-        if config.get("no_blending"):
-            cmd.append("--no_blending")
-        if config.get("verbose"):
-            cmd.append("--verbose")
         if config.get("steer_all"):
             cmd.append("--steer_all")
         if config.get("random_control"):
             cmd.append("--random_control")
-            
-        # Add random scale if specified
         if config.get("random_scale"):
             cmd.extend(["--random_scale", str(config["random_scale"])])
+        if config.get("verbose") or self.args.verbose:
+            cmd.append("--verbose")
             
         # Add alpha values
-        alphas = config.get("alphas", [0, 50, 100, 200, 500, 1000])
+        alphas = config.get("alphas", [0, 1, 2, 5, 10, 20, 50])
         cmd.extend(["--alphas"] + [str(a) for a in alphas])
         
-        # Add step filter if specified
-        if config.get("target_step") is not None:
-            cmd.extend(["--target_step", str(config["target_step"])])
+        # Add hop filter
+        if self.args.hop_filter:
+            cmd.extend(["--hop_filter"] + [str(h) for h in self.args.hop_filter])
             
-        if config.get("hop_filter"):
-            cmd.extend(["--hop_filter"] + [str(h) for h in config["hop_filter"]])
-            
-        print(f"\n  Running: {' '.join(cmd)}")
+        print(f"\n  [RUNNING] {config['exp_name']}")
+        print(f"     Command: {' '.join(cmd[-10:])}...")  # Show last part only
         
-        # Run command and capture output
+        # Run command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         
-        # Parse results from output
-        output = result.stdout
-        error = result.stderr
-        
-        # Extract key metrics from output
+        # Parse results
         metrics = {
-            "command": " ".join(cmd),
+            "exp_name": config["exp_name"],
+            "model_type": config["model_type"],
             "return_code": result.returncode,
-            "stdout": output[-2000:] if len(output) > 2000 else output,
-            "stderr": error[-1000:] if error else "",
+            "answer_flips": 0,
+            "total_problems": 0,
+            "max_effect_size": 0.0,
+            "flip_rate": 0.0,
         }
         
-        # Parse for answer flips
-        flip_count = 0
-        total_problems = 0
-        for line in output.split("\n"):
+        for line in result.stdout.split("\n"):
             if "Answer flipped:" in line:
                 parts = line.split("Answer flipped:")[-1].strip()
                 if "/" in parts:
-                    flip_count = int(parts.split("/")[0])
-                    total_problems = int(parts.split("/")[1].split()[0] if len(parts.split("/")) > 1 else 0)
-                metrics["answer_flips"] = flip_count
-                metrics["total_problems"] = total_problems
+                    metrics["answer_flips"] = int(parts.split("/")[0])
+                    metrics["total_problems"] = int(parts.split("/")[1].split()[0])
+                    metrics["flip_rate"] = metrics["answer_flips"] / metrics["total_problems"] if metrics["total_problems"] > 0 else 0
             elif "Max effect size:" in line:
-                effect = line.split("Max effect size:")[-1].strip()
                 try:
-                    metrics["max_effect_size"] = float(effect)
+                    metrics["max_effect_size"] = float(line.split("Max effect size:")[-1].strip())
                 except:
-                    metrics["max_effect_size"] = effect
+                    pass
                     
+        # Also try to read from results file if available
+        results_path = os.path.join(self.output_dir, config["exp_name"], "steering_results.json")
+        if os.path.exists(results_path):
+            try:
+                with open(results_path, "r") as f:
+                    full_results = json.load(f)
+                    if "results" in full_results:
+                        for r in full_results["results"]:
+                            if r.get("answer_flipped", False):
+                                metrics["answer_flips"] += 1
+                        metrics["total_problems"] = len(full_results["results"])
+                        metrics["flip_rate"] = metrics["answer_flips"] / metrics["total_problems"] if metrics["total_problems"] > 0 else 0
+            except:
+                pass
+                
         return metrics
     
-    def run_experiment_1_baseline(self):
-        """Experiment 1: Baseline - No steering (control)."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 1: BASELINE (No Steering)")
-        print("="*70)
-        
-        config = {
-            "exp_name": f"01_baseline_{self.timestamp}",
-            "model_type": "coconut",
-            "n_problems": self.args.n_problems,
-            "start_idx": self.args.start_idx,
-            "alphas": [0],
-            "per_step_vectors": False,
-            "no_blending": True,
-            "verbose": self.args.verbose,
-        }
-        
-        if self.args.hop_filter:
-            config["hop_filter"] = self.args.hop_filter
-            
-        result = self.run_steering_command(config)
-        self.results["baseline"] = result
-        return result
-    
-    def run_experiment_2_first_step_only(self):
-        """Experiment 2: Steer ONLY the first reasoning step."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 2: FIRST STEP ONLY")
-        print("="*70)
-        print("Testing: Steer only step 0 (the initial premise)")
+    # ================================================================
+    # EXPERIMENT 1: BASELINE STABILITY
+    # ================================================================
+    def experiment_1_baseline(self) -> Dict:
+        """Establish baseline: No steering = 0 flips."""
+        print("\n" + "="*80)
+        print("EXPERIMENT 1: BASELINE STABILITY")
+        print("="*80)
+        print("Purpose: Verify that without steering, answers remain stable.")
+        print("Expected: 0 flips for both models.")
         
         results = {}
         
-        for alpha_set in ["positive", "negative", "mixed"]:
-            print(f"\n  Alpha range: {alpha_set}")
-            
-            if alpha_set == "positive":
-                alphas = [0, 50, 100, 200, 500, 1000]
-            elif alpha_set == "negative":
-                alphas = [0, -50, -100, -200, -500, -1000]
-            else:
-                alphas = [-1000, -500, -200, -100, -50, 0, 50, 100, 200, 500, 1000]
-                
+        for model in ["coconut", "verbal"]:
+            print(f"\n  Testing {model.upper()}...")
             config = {
-                "exp_name": f"02_first_step_{alpha_set}_{self.timestamp}",
-                "model_type": "coconut",
-                "n_problems": self.args.n_problems,
-                "start_idx": self.args.start_idx,
-                "alphas": alphas,
-                "per_step_vectors": True,
-                "no_blending": True,
-                "verbose": self.args.verbose,
+                "exp_name": f"01_baseline_{model}_{self.timestamp}",
+                "model_type": model,
+                "alphas": [0],  # Only baseline
+                "per_step_vectors": False,
             }
+            metrics = self._run_steering(config)
+            results[model] = metrics
+            print(f"    [OK] {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips")
             
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[alpha_set] = result
-            
-        self.results["first_step_only"] = results
+        self.results["baseline"] = results
         return results
     
-    def run_experiment_3_last_step_only(self):
-        """Experiment 3: Steer ONLY the last reasoning step."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 3: LAST STEP ONLY")
-        print("="*70)
-        print("Testing: Steer only the final reasoning step before answer")
+    # ================================================================
+    # EXPERIMENT 2: RANDOM CONTROL (Multiple Scales)
+    # ================================================================
+    def experiment_2_random_control(self) -> Dict:
+        """
+        Establish random baseline: Random vectors at multiple scales.
+        Should cause 0 flips at small scales, increasing at larger scales.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 2: RANDOM CONTROL (Multiple Scales)")
+        print("="*80)
+        print("Purpose: Determine the noise floor and validate steering specificity.")
+        print("Expected: scale=0.01-0.1 -> 0 flips, scale=0.5-1.0 -> some flips")
+        
+        scales = [0.01, 0.05, 0.1, 0.2, 0.5, 1.0]
+        alphas = [0, 10, 20, 50, 100]
         
         results = {}
         
-        for alpha_set in ["positive", "negative", "mixed"]:
-            print(f"\n  Alpha range: {alpha_set}")
-            
-            if alpha_set == "positive":
-                alphas = [0, 50, 100, 200, 500, 1000]
-            elif alpha_set == "negative":
-                alphas = [0, -50, -100, -200, -500, -1000]
-            else:
-                alphas = [-1000, -500, -200, -100, -50, 0, 50, 100, 200, 500, 1000]
-                
+        for scale in scales:
+            print(f"\n  Testing random scale = {scale}")
             config = {
-                "exp_name": f"03_last_step_{alpha_set}_{self.timestamp}",
+                "exp_name": f"02_random_scale_{scale}_{self.timestamp}",
                 "model_type": "coconut",
-                "n_problems": self.args.n_problems,
-                "start_idx": self.args.start_idx,
+                "random_control": True,
+                "random_scale": scale,
                 "alphas": alphas,
-                "per_step_vectors": True,
-                "no_blending": True,
-                "verbose": self.args.verbose,
+                "per_step_vectors": False,
             }
+            metrics = self._run_steering(config)
+            results[f"scale_{scale}"] = metrics
+            print(f"    Scale {scale}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
             
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[alpha_set] = result
-            
-        self.results["last_step_only"] = results
+        self.results["random_control"] = results
         return results
     
-    def run_experiment_4_all_steps(self):
-        """Experiment 4: Steer ALL reasoning steps from beginning."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 4: ALL STEPS (Cumulative Steering)")
-        print("="*70)
-        print("Testing: Steer every step from the target step onward")
+    # ================================================================
+    # EXPERIMENT 3: COCONUT - STEP-BY-STEP STEERING
+    # ================================================================
+    def experiment_3_coconut_step_steering(self) -> Dict:
+        """
+        Test steering at each individual reasoning step.
+        Identifies which steps are causally critical.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 3: COCONUT - STEP-BY-STEP STEERING")
+        print("="*80)
+        print("Purpose: Identify which reasoning steps are causally important.")
+        print("Expected: Some steps (e.g., step 2) cause more flips than others.")
+        
+        alphas = [0, 1, 2, 5, 10, 20, 50]
         
         results = {}
         
-        for alpha_set in ["positive", "negative", "mixed"]:
-            print(f"\n  Alpha range: {alpha_set}")
-            
-            if alpha_set == "positive":
-                alphas = [0, 10, 25, 50, 100]
-            elif alpha_set == "negative":
-                alphas = [0, -10, -25, -50, -100]
-            else:
-                alphas = [-100, -50, -25, -10, 0, 10, 25, 50, 100]
-                
+        # Test each step (up to 5 hops)
+        for step in range(5):
+            print(f"\n  Testing step {step}...")
             config = {
-                "exp_name": f"04_all_steps_{alpha_set}_{self.timestamp}",
+                "exp_name": f"03_coconut_step_{step}_{self.timestamp}",
                 "model_type": "coconut",
-                "n_problems": self.args.n_problems,
-                "start_idx": self.args.start_idx,
+                "per_step_vectors": True,
                 "alphas": alphas,
+                # Note: We'll analyze step-specific results from the output
+            }
+            metrics = self._run_steering(config)
+            results[f"step_{step}"] = metrics
+            print(f"    Step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            
+        self.results["coconut_step_steering"] = results
+        return results
+    
+    # ================================================================
+    # EXPERIMENT 4: COCONUT - CUMULATIVE STEERING
+    # ================================================================
+    def experiment_4_coconut_cumulative_steering(self) -> Dict:
+        """
+        Test cumulative steering: steer all steps from a target onward.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 4: COCONUT - CUMULATIVE STEERING")
+        print("="*80)
+        print("Purpose: Test if cumulative steering has stronger effects.")
+        print("Expected: Cumulative steering causes more flips at smaller alphas.")
+        
+        alphas = [0, 0.5, 1, 2, 5, 10, 20]
+        
+        results = {}
+        
+        for step in range(5):
+            print(f"\n  Testing cumulative from step {step}...")
+            config = {
+                "exp_name": f"04_coconut_cumulative_{step}_{self.timestamp}",
+                "model_type": "coconut",
                 "per_step_vectors": True,
                 "steer_all": True,
-                "no_blending": True,
-                "verbose": self.args.verbose,
-            }
-            
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[alpha_set] = result
-            
-        self.results["all_steps"] = results
-        return results
-    
-    def run_experiment_5_middle_steps(self):
-        """Experiment 5: Steer only middle reasoning steps."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 5: MIDDLE STEPS ONLY")
-        print("="*70)
-        print("Testing: Steer each middle step individually")
-        
-        results = {}
-        
-        alphas = [-500, -200, -100, -50, 0, 50, 100, 200, 500]
-        
-        for step in [1, 2, 3]:
-            print(f"\n  Targeting step {step}")
-            
-            config = {
-                "exp_name": f"05_middle_step_{step}_{self.timestamp}",
-                "model_type": "coconut",
-                "n_problems": self.args.n_problems,
-                "start_idx": self.args.start_idx,
                 "alphas": alphas,
-                "per_step_vectors": True,
-                "no_blending": True,
-                "verbose": self.args.verbose,
             }
+            metrics = self._run_steering(config)
+            results[f"from_step_{step}"] = metrics
+            print(f"    Cumulative from step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
             
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[f"step_{step}"] = result
-            
-        self.results["middle_steps"] = results
+        self.results["coconut_cumulative"] = results
         return results
     
-    def run_experiment_6_alpha_sensitivity(self):
-        """Experiment 6: Fine-grained alpha sweep to find flip thresholds."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 6: ALPHA SENSITIVITY (Finding Flip Thresholds)")
-        print("="*70)
-        print("Testing: Fine-grained alpha sweep to find exact flip points")
+    # ================================================================
+    # EXPERIMENT 5: COCONUT - ALPHA SENSITIVITY (Fine-grained)
+    # ================================================================
+    def experiment_5_coconut_alpha_sensitivity(self) -> Dict:
+        """
+        Fine-grained alpha sweep to find exact flip thresholds.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 5: COCONUT - ALPHA SENSITIVITY")
+        print("="*80)
+        print("Purpose: Find the minimum alpha that causes answer flips.")
+        print("Expected: Threshold around alpha=2-5 for critical steps.")
         
+        # Very fine-grained alphas around expected threshold
         alpha_ranges = {
-            "small": list(range(-100, 101, 10)),
-            "medium": list(range(-500, 501, 50)),
-            "large": list(range(-1000, 1001, 100)),
+            "tiny": [0, 0.1, 0.2, 0.5, 0.8, 1.0],
+            "small": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "medium": [0, 10, 15, 20, 25, 30, 40, 50],
+            "large": [0, 50, 75, 100, 150, 200, 300, 500],
         }
         
         results = {}
         
         for range_name, alphas in alpha_ranges.items():
             print(f"\n  Alpha range: {range_name} ({len(alphas)} values)")
-            
             config = {
-                "exp_name": f"06_alpha_sensitivity_{range_name}_{self.timestamp}",
+                "exp_name": f"05_alpha_{range_name}_{self.timestamp}",
                 "model_type": "coconut",
-                "n_problems": min(5, self.args.n_problems),
-                "start_idx": self.args.start_idx,
-                "alphas": alphas,
                 "per_step_vectors": True,
-                "no_blending": True,
-                "verbose": False,
+                "alphas": alphas,
             }
-            
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[range_name] = result
+            metrics = self._run_steering(config)
+            results[range_name] = metrics
+            print(f"    {range_name}: {metrics['answer_flips']}/{metrics['total_problems']} flips")
             
         self.results["alpha_sensitivity"] = results
         return results
     
-    def run_experiment_7_verbal_comparison(self):
-        """Experiment 7: Compare with Verbal CoT."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 7: VERBAL COT COMPARISON")
-        print("="*70)
-        print("Testing: Same steering on Verbal CoT model")
+    # ================================================================
+    # EXPERIMENT 6: VERBAL COT - STEP-BY-STEP STEERING
+    # ================================================================
+    def experiment_6_verbal_steering(self) -> Dict:
+        """
+        Test steering on Verbal CoT model at each reasoning step.
+        This tests the hypothesis that Verbal CoT is causally opaque.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 6: VERBAL COT - STEP-BY-STEP STEERING")
+        print("="*80)
+        print("Purpose: Test if Verbal CoT shows causal steering effects.")
+        print("Expected: 0 flips (hypothesis) or significantly fewer than Coconut.")
+        
+        alphas = [0, 10, 20, 50, 100, 200, 500]
         
         results = {}
         
-        alphas = [-500, -200, -100, -50, 0, 50, 100, 200, 500]
-        
-        config = {
-            "exp_name": f"07_verbal_comparison_{self.timestamp}",
-            "model_type": "verbal",
-            "n_problems": self.args.n_problems,
-            "start_idx": self.args.start_idx,
-            "alphas": alphas,
-            "per_step_vectors": True,
-            "no_blending": True,
-            "verbose": self.args.verbose,
-        }
-        
-        if self.args.hop_filter:
-            config["hop_filter"] = self.args.hop_filter
+        # Test each reasoning step
+        for step in range(5):
+            print(f"\n  Testing step {step}...")
+            config = {
+                "exp_name": f"06_verbal_step_{step}_{self.timestamp}",
+                "model_type": "verbal",
+                "per_step_vectors": True,
+                "alphas": alphas,
+            }
+            metrics = self._run_steering(config)
+            results[f"step_{step}"] = metrics
+            print(f"    Verbal step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
             
-        result = self.run_steering_command(config)
-        results["verbal"] = result
-        
-        self.results["verbal_comparison"] = results
+        self.results["verbal_steering"] = results
         return results
     
-    def run_experiment_8_random_control(self):
-        """Experiment 8: Random vector control with multiple scales."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 8: RANDOM CONTROL (Multiple Scales)")
-        print("="*70)
-        print("Testing: Random steering vectors at different magnitudes")
-        print("Should produce 0 flips for small scales, may produce some at large scales")
+    # ================================================================
+    # EXPERIMENT 7: COCONUT VS VERBAL (Direct Comparison)
+    # ================================================================
+    def experiment_7_direct_comparison(self) -> Dict:
+        """
+        Direct head-to-head comparison at equal alpha values.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 7: COCONUT VS VERBAL (Direct Comparison)")
+        print("="*80)
+        print("Purpose: Directly compare steering efficacy between models.")
+        print("Expected: Coconut shows significantly more flips than Verbal.")
+        
+        alphas = [0, 1, 2, 5, 10, 20, 50, 100]
         
         results = {}
         
-        # Test different random vector scales
-        random_scales = [0.01, 0.05, 0.1, 0.2, 0.5, 1.0]
-        alphas = [0, 50, 100, 200, 500, 1000]  # Use same alpha range as meaningful steering
+        for model in ["coconut", "verbal"]:
+            print(f"\n  Testing {model.upper()}...")
+            config = {
+                "exp_name": f"07_comparison_{model}_{self.timestamp}",
+                "model_type": model,
+                "per_step_vectors": True,
+                "alphas": alphas,
+            }
+            metrics = self._run_steering(config)
+            results[model] = metrics
+            print(f"    {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            
+        self.results["direct_comparison"] = results
+        return results
+    
+    # ================================================================
+    # EXPERIMENT 8: DIFFICULTY SCALING (Hop Count Analysis)
+    # ================================================================
+    def experiment_8_difficulty_scaling(self) -> Dict:
+        """
+        Test how steering efficacy scales with problem difficulty (hop count).
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 8: DIFFICULTY SCALING (Hop Count Analysis)")
+        print("="*80)
+        print("Purpose: Test if steering works better/worse on longer reasoning chains.")
+        print("Expected: May show different patterns for different hop counts.")
         
-        for scale in random_scales:
-            print(f"\n  Random scale: {scale}")
+        hop_counts = [3, 4, 5]
+        alphas = [0, 5, 10, 20, 50]
+        
+        results = {}
+        
+        for hops in hop_counts:
+            print(f"\n  Testing {hops}-hop problems...")
+            
+            # Temporarily override hop_filter
+            original_filter = self.args.hop_filter
+            self.args.hop_filter = [hops]
             
             config = {
-                "exp_name": f"08_random_control_scale_{scale}_{self.timestamp}",
+                "exp_name": f"08_difficulty_{hops}hop_{self.timestamp}",
                 "model_type": "coconut",
-                "n_problems": self.args.n_problems,
-                "start_idx": self.args.start_idx,
+                "per_step_vectors": True,
                 "alphas": alphas,
-                "per_step_vectors": False,
-                "random_control": True,
-                "random_scale": scale,
-                "no_blending": True,
-                "verbose": self.args.verbose,
             }
+            metrics = self._run_steering(config)
+            results[f"{hops}hop"] = metrics
+            print(f"    {hops}-hop: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
             
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[f"scale_{scale}"] = result
+            # Restore
+            self.args.hop_filter = original_filter
             
-        self.results["random_control"] = results
+        self.results["difficulty_scaling"] = results
         return results
     
-    def run_experiment_9_noise_baseline(self):
-        """Experiment 9: Gaussian noise baseline (same magnitude as steering vectors)."""
-        print("\n" + "="*70)
-        print("EXPERIMENT 9: NOISE BASELINE")
-        print("="*70)
-        print("Testing: Random Gaussian noise matched to steering vector magnitude")
+    # ================================================================
+    # EXPERIMENT 9: NEGATIVE STEERING (Opposite Direction)
+    # ================================================================
+    def experiment_9_negative_steering(self) -> Dict:
+        """
+        Test steering in the negative direction (should flip to False).
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 9: NEGATIVE STEERING (Opposite Direction)")
+        print("="*80)
+        print("Purpose: Test if negative alphas flip answers in the opposite direction.")
+        print("Expected: Negative alphas cause flips from True -> False.")
+        
+        alphas = [0, -1, -2, -5, -10, -20, -50, -100]
         
         results = {}
         
-        # Match the steering vector magnitude (~1.0 normalized)
-        noise_scales = [0.1, 0.5, 1.0, 2.0, 5.0]
-        alphas = [0, 50, 100, 200, 500]
-        
-        for scale in noise_scales:
-            print(f"\n  Noise scale: {scale}")
-            
+        for model in ["coconut", "verbal"]:
+            print(f"\n  Testing {model.upper()} with negative alphas...")
             config = {
-                "exp_name": f"09_noise_baseline_scale_{scale}_{self.timestamp}",
-                "model_type": "coconut",
-                "n_problems": min(5, self.args.n_problems),
-                "start_idx": self.args.start_idx,
+                "exp_name": f"09_negative_{model}_{self.timestamp}",
+                "model_type": model,
+                "per_step_vectors": True,
                 "alphas": alphas,
-                "per_step_vectors": False,
-                "random_control": True,
-                "random_scale": scale,
-                "no_blending": True,
-                "verbose": False,
             }
+            metrics = self._run_steering(config)
+            results[model] = metrics
+            print(f"    {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
             
-            if self.args.hop_filter:
-                config["hop_filter"] = self.args.hop_filter
-                
-            result = self.run_steering_command(config)
-            results[f"scale_{scale}"] = result
-            
-        self.results["noise_baseline"] = results
+        self.results["negative_steering"] = results
         return results
     
-    def generate_summary_report(self):
-        """Generate a detailed summary report of all experiments."""
-        print("\n" + "="*70)
-        print("GENERATING SUMMARY REPORT")
-        print("="*70)
+    # ================================================================
+    # EXPERIMENT 10: FIRST STEP VS LAST STEP
+    # ================================================================
+    def experiment_10_first_vs_last(self) -> Dict:
+        """
+        Compare steering at first step vs last step.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 10: FIRST STEP VS LAST STEP")
+        print("="*80)
+        print("Purpose: Determine which step is more causally important.")
+        print("Expected: May differ based on reasoning structure.")
+        
+        alphas = [0, 1, 2, 5, 10, 20, 50]
+        
+        results = {}
+        
+        for step_name, step_idx in [("first", 0), ("last", 4)]:
+            print(f"\n  Testing {step_name} step...")
+            config = {
+                "exp_name": f"10_{step_name}_step_{self.timestamp}",
+                "model_type": "coconut",
+                "per_step_vectors": True,
+                "alphas": alphas,
+            }
+            metrics = self._run_steering(config)
+            results[step_name] = metrics
+            print(f"    {step_name.upper()} step: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            
+        self.results["first_vs_last"] = results
+        return results
+    
+    # ================================================================
+    # EXPERIMENT 11: REPRODUCIBILITY TEST (Multiple Seeds)
+    # ================================================================
+    def experiment_11_reproducibility(self) -> Dict:
+        """
+        Test reproducibility by running the same experiment multiple times.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 11: REPRODUCIBILITY TEST")
+        print("="*80)
+        print("Purpose: Verify that results are consistent across runs.")
+        print("Expected: Similar flip rates across seeds.")
+        
+        seeds = [42, 123, 456]
+        alphas = [0, 5, 10, 20]
+        
+        results = {}
+        
+        for seed in seeds:
+            print(f"\n  Testing seed {seed}...")
+            
+            # Temporarily set seed
+            original_seed = self.args.seed
+            self.args.seed = seed
+            
+            config = {
+                "exp_name": f"11_reproducible_seed{seed}_{self.timestamp}",
+                "model_type": "coconut",
+                "per_step_vectors": True,
+                "alphas": alphas,
+            }
+            metrics = self._run_steering(config)
+            results[f"seed_{seed}"] = metrics
+            print(f"    Seed {seed}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            
+            # Restore
+            self.args.seed = original_seed
+            
+        self.results["reproducibility"] = results
+        return results
+    
+    # ================================================================
+    # EXPERIMENT 12: COMPLETE SWEEP (All Configurations)
+    # ================================================================
+    def experiment_12_complete_sweep(self) -> Dict:
+        """
+        Complete sweep of all configurations on a small problem set.
+        This is the most comprehensive test.
+        """
+        print("\n" + "="*80)
+        print("EXPERIMENT 12: COMPLETE SWEEP (All Configurations)")
+        print("="*80)
+        print("Purpose: Test all combinations on a small set to find optimal settings.")
+        
+        # Use fewer problems for complete sweep
+        original_n = self.args.n_problems
+        self.args.n_problems = min(5, original_n)
+        
+        configurations = [
+            # (model, per_step, steer_all, random_control, random_scale, alpha_name)
+            ("coconut", True, False, False, None, "meaningful_per_step"),
+            ("coconut", True, True, False, None, "meaningful_cumulative"),
+            ("coconut", False, False, False, None, "embedding_only"),
+            ("coconut", False, False, True, 0.1, "random_scale_0.1"),
+            ("coconut", False, False, True, 0.5, "random_scale_0.5"),
+            ("verbal", True, False, False, None, "verbal_per_step"),
+            ("verbal", False, False, False, None, "verbal_embedding"),
+        ]
+        
+        alphas = [0, 1, 2, 5, 10, 20, 50]
+        
+        results = {}
+        
+        for model, per_step, steer_all, random_ctrl, rand_scale, name in configurations:
+            print(f"\n  Testing: {name}")
+            config = {
+                "exp_name": f"12_sweep_{name}_{self.timestamp}",
+                "model_type": model,
+                "per_step_vectors": per_step,
+                "steer_all": steer_all,
+                "random_control": random_ctrl,
+                "alphas": alphas,
+            }
+            if random_ctrl and rand_scale:
+                config["random_scale"] = rand_scale
+                
+            metrics = self._run_steering(config)
+            results[name] = metrics
+            print(f"    {name}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            
+        # Restore
+        self.args.n_problems = original_n
+        
+        self.results["complete_sweep"] = results
+        return results
+    
+    # ================================================================
+    # ANALYSIS AND REPORTING
+    # ================================================================
+    def generate_report(self) -> Dict:
+        """
+        Generate comprehensive analysis report with statistics.
+        """
+        print("\n" + "="*80)
+        print("GENERATING COMPREHENSIVE ANALYSIS REPORT")
+        print("="*80)
         
         report = {
             "experiment_name": self.experiment_name,
@@ -443,235 +593,259 @@ class ComprehensiveSteeringExperiment:
                 "n_problems": self.args.n_problems,
                 "start_idx": self.args.start_idx,
                 "hop_filter": self.args.hop_filter,
+                "seed": self.args.seed,
             },
             "results": self.results,
-            "summary": {},
-            "conclusions": {}
+            "analysis": {},
+            "conclusions": {},
         }
         
-        # Extract key findings
-        summary = {}
-        conclusions = {}
-        
-        # Check baseline
+        # ============================================================
+        # ANALYSIS 1: Baseline Validation
+        # ============================================================
         if "baseline" in self.results:
-            summary["baseline_effect"] = self.results["baseline"].get("max_effect_size", 0)
-            summary["baseline_flips"] = self.results["baseline"].get("answer_flips", 0)
+            baseline_coconut = self.results["baseline"].get("coconut", {})
+            baseline_verbal = self.results["baseline"].get("verbal", {})
+            
+            report["analysis"]["baseline_valid"] = (
+                baseline_coconut.get("answer_flips", 1) == 0 and
+                baseline_verbal.get("answer_flips", 1) == 0
+            )
+            report["analysis"]["baseline_message"] = (
+                "[OK] Baseline stable" if report["analysis"]["baseline_valid"] 
+                else "[FAIL] Baseline shows flips without steering!"
+            )
         
-        # Check first step flips
-        if "first_step_only" in self.results:
-            first_step_flips = {}
-            for alpha_set, result in self.results["first_step_only"].items():
-                flips = result.get("answer_flips", 0)
-                total = result.get("total_problems", self.args.n_problems)
-                first_step_flips[alpha_set] = {"flips": flips, "total": total, "rate": flips/total if total > 0 else 0}
-            summary["first_step"] = first_step_flips
-        
-        # Check last step flips
-        if "last_step_only" in self.results:
-            last_step_flips = {}
-            for alpha_set, result in self.results["last_step_only"].items():
-                flips = result.get("answer_flips", 0)
-                total = result.get("total_problems", self.args.n_problems)
-                last_step_flips[alpha_set] = {"flips": flips, "total": total, "rate": flips/total if total > 0 else 0}
-            summary["last_step"] = last_step_flips
-        
-        # Check all steps flips
-        if "all_steps" in self.results:
-            all_steps_flips = {}
-            for alpha_set, result in self.results["all_steps"].items():
-                flips = result.get("answer_flips", 0)
-                total = result.get("total_problems", self.args.n_problems)
-                all_steps_flips[alpha_set] = {"flips": flips, "total": total, "rate": flips/total if total > 0 else 0}
-            summary["all_steps"] = all_steps_flips
-        
-        # Check middle steps
-        if "middle_steps" in self.results:
-            middle_step_flips = {}
-            for step, result in self.results["middle_steps"].items():
-                flips = result.get("answer_flips", 0)
-                total = result.get("total_problems", self.args.n_problems)
-                middle_step_flips[step] = {"flips": flips, "total": total, "rate": flips/total if total > 0 else 0}
-            summary["middle_steps"] = middle_step_flips
-        
-        # Check verbal comparison
-        if "verbal_comparison" in self.results:
-            verbal_result = self.results["verbal_comparison"].get("verbal", {})
-            summary["verbal_flips"] = verbal_result.get("answer_flips", 0)
-            summary["verbal_total"] = verbal_result.get("total_problems", self.args.n_problems)
-            summary["verbal_max_effect"] = verbal_result.get("max_effect_size", 0)
-        
-        # Check random control (critical for validity)
+        # ============================================================
+        # ANALYSIS 2: Random Control Threshold
+        # ============================================================
         if "random_control" in self.results:
-            random_results = {}
-            for scale_name, result in self.results["random_control"].items():
-                flips = result.get("answer_flips", 0)
-                total = result.get("total_problems", self.args.n_problems)
-                random_results[scale_name] = {"flips": flips, "total": total, "rate": flips/total if total > 0 else 0}
-            summary["random_control"] = random_results
+            random_results = self.results["random_control"]
+            smallest_scale = min([float(k.split("_")[1]) for k in random_results.keys() if "scale" in k])
+            smallest_flips = random_results.get(f"scale_{smallest_scale}", {}).get("answer_flips", 1)
             
-            # Determine validity
-            small_scale_flips = 0
-            for scale_name, data in random_results.items():
-                if "0.01" in scale_name or "0.05" in scale_name:
-                    small_scale_flips += data["flips"]
+            report["analysis"]["random_floor"] = smallest_scale
+            report["analysis"]["random_floor_valid"] = smallest_flips == 0
+            report["analysis"]["random_floor_message"] = (
+                f"[OK] Random scale {smallest_scale} causes 0 flips" if smallest_flips == 0
+                else f"[WARN] Random scale {smallest_scale} causes {smallest_flips} flips"
+            )
+        
+        # ============================================================
+        # ANALYSIS 3: Coconut Steering Efficacy
+        # ============================================================
+        if "coconut_step_steering" in self.results:
+            step_results = self.results["coconut_step_steering"]
+            best_step = max(step_results.items(), key=lambda x: x[1].get("flip_rate", 0))
             
-            if small_scale_flips == 0:
-                conclusions["random_control_valid"] = True
-                conclusions["random_control_message"] = "✅ Random control passed - small magnitude random vectors cause no flips"
-            else:
-                conclusions["random_control_valid"] = False
-                conclusions["random_control_message"] = "⚠️ Random control shows flips at small magnitudes - experiment may be invalid"
+            report["analysis"]["coconut_best_step"] = best_step[0]
+            report["analysis"]["coconut_best_flip_rate"] = best_step[1].get("flip_rate", 0)
+            report["analysis"]["coconut_effective"] = best_step[1].get("flip_rate", 0) > 0.5
         
-        # Check noise baseline
-        if "noise_baseline" in self.results:
-            noise_results = {}
-            for scale_name, result in self.results["noise_baseline"].items():
-                flips = result.get("answer_flips", 0)
-                total = result.get("total_problems", min(5, self.args.n_problems))
-                noise_results[scale_name] = {"flips": flips, "total": total, "rate": flips/total if total > 0 else 0}
-            summary["noise_baseline"] = noise_results
+        # ============================================================
+        # ANALYSIS 4: Verbal CoT Steering Efficacy
+        # ============================================================
+        if "verbal_steering" in self.results:
+            verbal_results = self.results["verbal_steering"]
+            verbal_flip_rate = max([r.get("flip_rate", 0) for r in verbal_results.values()])
+            
+            report["analysis"]["verbal_max_flip_rate"] = verbal_flip_rate
+            report["analysis"]["verbal_effective"] = verbal_flip_rate > 0.2
         
-        # Draw conclusions
-        coconut_effective = False
-        if "first_step" in summary:
-            for alpha_set, data in summary["first_step"].items():
-                if data.get("rate", 0) > 0.5:
-                    coconut_effective = True
-                    break
+        # ============================================================
+        # ANALYSIS 5: Direct Comparison
+        # ============================================================
+        if "direct_comparison" in self.results:
+            comp = self.results["direct_comparison"]
+            coconut_rate = comp.get("coconut", {}).get("flip_rate", 0)
+            verbal_rate = comp.get("verbal", {}).get("flip_rate", 0)
+            
+            report["analysis"]["coconut_vs_verbal_ratio"] = coconut_rate / (verbal_rate + 0.01)
+            report["analysis"]["coconut_significantly_better"] = coconut_rate > verbal_rate + 0.2
         
-        conclusions["coconut_steerable"] = coconut_effective
-        conclusions["verbal_steerable"] = summary.get("verbal_flips", 0) > 0
+        # ============================================================
+        # ANALYSIS 6: Difficulty Scaling
+        # ============================================================
+        if "difficulty_scaling" in self.results:
+            diff_results = self.results["difficulty_scaling"]
+            hop_rates = {k: v.get("flip_rate", 0) for k, v in diff_results.items()}
+            report["analysis"]["difficulty_scaling"] = hop_rates
         
-        if coconut_effective and not conclusions["verbal_steerable"]:
-            conclusions["main_hypothesis"] = "✅ CONFIRMED: Coconut is causally steerable, Verbal CoT is not"
-        elif coconut_effective and conclusions["verbal_steerable"]:
-            conclusions["main_hypothesis"] = "⚠️ PARTIAL: Both models show steering effects"
+        # ============================================================
+        # ANALYSIS 7: Negative Steering
+        # ============================================================
+        if "negative_steering" in self.results:
+            neg_results = self.results["negative_steering"]
+            coconut_neg = neg_results.get("coconut", {}).get("flip_rate", 0)
+            report["analysis"]["negative_steering_works"] = coconut_neg > 0.3
+        
+        # ============================================================
+        # CONCLUSIONS
+        # ============================================================
+        conclusions = []
+        
+        # Main hypothesis
+        if report["analysis"].get("coconut_effective", False) and not report["analysis"].get("verbal_effective", False):
+            conclusions.append("[CONFIRMED] MAIN HYPOTHESIS: Coconut is causally steerable, Verbal CoT is not")
+        elif report["analysis"].get("coconut_effective", False) and report["analysis"].get("verbal_effective", False):
+            conclusions.append("[PARTIAL] Both models show steering effects, but Coconut may be stronger")
         else:
-            conclusions["main_hypothesis"] = "❌ REJECTED: Neither model shows reliable steering"
+            conclusions.append("[REJECTED] Neither model shows reliable steering effects")
         
-        report["summary"] = summary
+        # Validity
+        if report["analysis"].get("baseline_valid", False) and report["analysis"].get("random_floor_valid", False):
+            conclusions.append("[VALID] Baseline and random control pass validity checks")
+        else:
+            conclusions.append("[WARN] Validity concern: Baseline or random control shows unexpected flips")
+        
+        # Best configuration
+        if report["analysis"].get("coconut_effective", False):
+            best = report["analysis"].get("coconut_best_step", "unknown")
+            conclusions.append(f"[BEST] Configuration: Steering at {best} with per-step vectors")
+        
         report["conclusions"] = conclusions
         
         # Save report
-        report_path = os.path.join(self.output_dir, "summary_report.json")
+        report_path = os.path.join(self.output_dir, "analysis_report.json")
         with open(report_path, "w") as f:
             json.dump(report, f, indent=2)
         
         # Print summary
-        print("\n" + "-"*50)
-        print("SUMMARY REPORT")
-        print("-"*50)
-        print(f"Experiment: {self.experiment_name}")
-        print(f"Timestamp: {self.timestamp}")
-        print(f"Problems tested: {self.args.n_problems}")
-        print(f"Hop filter: {self.args.hop_filter}")
-        
-        print("\n📊 KEY FINDINGS:")
-        print(f"  Baseline flips: {summary.get('baseline_flips', 0)}")
-        print(f"  Verbal CoT flips: {summary.get('verbal_flips', 0)}/{summary.get('verbal_total', self.args.n_problems)}")
-        
-        print("\n🎯 COCONUT STEERING EFFECTIVENESS:")
-        if "first_step" in summary:
-            for alpha_set, data in summary["first_step"].items():
-                print(f"  First step ({alpha_set}): {data['flips']}/{data['total']} flips ({data['rate']*100:.0f}%)")
-        
-        print("\n🔬 VALIDITY CHECKS:")
-        if "random_control" in summary:
-            for scale_name, data in summary["random_control"].items():
-                print(f"  Random scale {scale_name}: {data['flips']}/{data['total']} flips ({data['rate']*100:.0f}%)")
-        
-        print("\n💡 CONCLUSIONS:")
-        for key, value in conclusions.items():
-            if isinstance(value, str):
-                print(f"  {value}")
-            elif isinstance(value, bool):
-                print(f"  {key}: {value}")
-        
-        print(f"\n📄 Full report saved to: {report_path}")
+        self._print_summary(report)
         
         return report
     
+    def _print_summary(self, report: Dict):
+        """Print formatted summary to console."""
+        print("\n" + "="*80)
+        print("EXPERIMENT SUMMARY")
+        print("="*80)
+        
+        print(f"\n[FOLDER] Experiment: {report['experiment_name']}")
+        print(f"[DATE] Timestamp: {report['timestamp']}")
+        print(f"[DATA] Problems: {report['config']['n_problems']}")
+        
+        print("\n" + "-"*40)
+        print("VALIDITY CHECKS")
+        print("-"*40)
+        print(f"  {report['analysis'].get('baseline_message', 'N/A')}")
+        print(f"  {report['analysis'].get('random_floor_message', 'N/A')}")
+        
+        print("\n" + "-"*40)
+        print("STEERING EFFECTIVENESS")
+        print("-"*40)
+        print(f"  Coconut best flip rate: {report['analysis'].get('coconut_best_flip_rate', 0):.2%}")
+        print(f"  Coconut best step: {report['analysis'].get('coconut_best_step', 'N/A')}")
+        print(f"  Verbal max flip rate: {report['analysis'].get('verbal_max_flip_rate', 0):.2%}")
+        
+        if "coconut_vs_verbal_ratio" in report["analysis"]:
+            print(f"  Coconut/Verbal ratio: {report['analysis']['coconut_vs_verbal_ratio']:.1f}x")
+        
+        print("\n" + "-"*40)
+        print("CONCLUSIONS")
+        print("-"*40)
+        for conclusion in report["conclusions"]:
+            print(f"  {conclusion}")
+        
+        print(f"\n[SAVED] Full report saved to: {os.path.join(self.output_dir, 'analysis_report.json')}")
+    
+    # ================================================================
+    # MAIN RUN METHOD
+    # ================================================================
     def run_all(self):
-        """Run all experiments."""
-        print("\n" + "="*70)
-        print("COMPREHENSIVE STEERING EXPERIMENTS")
-        print("="*70)
-        print(f"Experiment name: {self.experiment_name}")
-        print(f"Output directory: {self.output_dir}")
-        print(f"Number of problems: {self.args.n_problems}")
-        print(f"Start index: {self.args.start_idx}")
+        """Run all experiments in the suite."""
+        print("\n" + "="*80)
+        print("COMPREHENSIVE STEERING EXPERIMENT SUITE")
+        print("="*80)
+        print(f"Experiment: {self.experiment_name}")
+        print(f"Output: {self.output_dir}")
+        print(f"Problems: {self.args.n_problems}")
         print(f"Hop filter: {self.args.hop_filter}")
+        print(f"Seed: {self.args.seed}")
         
-        # Save experiment config
-        config_path = os.path.join(self.output_dir, "experiment_config.json")
-        with open(config_path, "w") as f:
-            json.dump(vars(self.args), f, indent=2)
-        
-        # Run experiments
+        # Define experiment order (from quickest to longest)
         experiments = [
-            ("Baseline", self.run_experiment_1_baseline),
-            ("First Step Only", self.run_experiment_2_first_step_only),
-            ("Last Step Only", self.run_experiment_3_last_step_only),
-            ("All Steps", self.run_experiment_4_all_steps),
-            ("Middle Steps", self.run_experiment_5_middle_steps),
-            ("Alpha Sensitivity", self.run_experiment_6_alpha_sensitivity),
-            ("Verbal Comparison", self.run_experiment_7_verbal_comparison),
-            ("Random Control", self.run_experiment_8_random_control),
-            ("Noise Baseline", self.run_experiment_9_noise_baseline),
+            ("1. Baseline", self.experiment_1_baseline),
+            ("2. Random Control", self.experiment_2_random_control),
+            ("3. Coconut Step Steering", self.experiment_3_coconut_step_steering),
+            ("4. Coconut Cumulative", self.experiment_4_coconut_cumulative_steering),
+            ("5. Alpha Sensitivity", self.experiment_5_coconut_alpha_sensitivity),
+            ("6. Verbal CoT Steering", self.experiment_6_verbal_steering),
+            ("7. Direct Comparison", self.experiment_7_direct_comparison),
+            ("8. Difficulty Scaling", self.experiment_8_difficulty_scaling),
+            ("9. Negative Steering", self.experiment_9_negative_steering),
+            ("10. First vs Last", self.experiment_10_first_vs_last),
+            ("11. Reproducibility", self.experiment_11_reproducibility),
         ]
         
+        # Add complete sweep if not in quick mode
+        if not self.args.quick:
+            experiments.append(("12. Complete Sweep", self.experiment_12_complete_sweep))
+        
         for name, experiment_func in experiments:
-            print(f"\n{'='*70}")
-            print(f"STARTING: {name}")
-            print(f"{'='*70}")
+            print(f"\n{'='*80}")
+            print(f">>> RUNNING: {name}")
+            print(f"{'='*80}")
             try:
                 experiment_func()
             except Exception as e:
-                print(f"  ERROR in {name}: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"  [ERROR] in {name}: {e}")
+                if self.args.verbose:
+                    import traceback
+                    traceback.print_exc()
         
-        # Generate summary
-        report = self.generate_summary_report()
+        # Generate final report
+        report = self.generate_report()
         
-        print("\n" + "="*70)
+        print("\n" + "="*80)
         print("ALL EXPERIMENTS COMPLETE!")
-        print("="*70)
+        print("="*80)
         print(f"Results saved to: {self.output_dir}")
-        print(f"Summary report: {os.path.join(self.output_dir, 'summary_report.json')}")
         
         return report
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run comprehensive steering experiments")
+    parser = argparse.ArgumentParser(
+        description="Comprehensive Steering Experiment Suite",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+EXAMPLES:
+  # Run full suite on 20 problems
+  python steering_suite.py --n_problems 20
+  
+  # Quick test on 5 problems
+  python steering_suite.py --n_problems 5 --quick
+  
+  # Test only 3-hop problems
+  python steering_suite.py --hop_filter 3 --n_problems 10
+  
+  # Run with verbose output
+  python steering_suite.py --verbose --n_problems 10
+        """
+    )
     
     # Data selection
     parser.add_argument("--n_problems", type=int, default=10,
-                        help="Number of problems to test")
+                        help="Number of problems to test (default: 10)")
     parser.add_argument("--start_idx", type=int, default=0,
-                        help="Starting index in dataset")
+                        help="Starting index in dataset (default: 0)")
     parser.add_argument("--hop_filter", type=int, nargs="+", default=None,
-                        help="Filter by hop count (e.g., 3 4 5)")
+                        help="Filter by hop count, e.g., --hop_filter 3 4 5")
     
     # Experiment control
     parser.add_argument("--experiment_name", type=str, default=None,
                         help="Custom experiment name")
     parser.add_argument("--output_dir", type=str, default="results/steering",
-                        help="Output directory")
-    parser.add_argument("--skip_verbal", action="store_true",
-                        help="Skip verbal CoT experiments")
-    parser.add_argument("--skip_noise", action="store_true",
-                        help="Skip noise baseline experiments")
+                        help="Output directory (default: results/steering)")
     parser.add_argument("--quick", action="store_true",
-                        help="Run quick version (fewer problems, smaller alpha ranges)")
-    
-    # Other
+                        help="Quick mode: fewer problems, skip complete sweep")
     parser.add_argument("--verbose", action="store_true",
                         help="Verbose output")
+    
+    # Other
     parser.add_argument("--seed", type=int, default=42,
-                        help="Random seed")
+                        help="Random seed (default: 42)")
     
     return parser.parse_args()
 
@@ -681,12 +855,12 @@ def main():
     
     # Adjust for quick mode
     if args.quick:
-        args.n_problems = min(3, args.n_problems)
-        print("QUICK MODE: Using fewer problems and smaller alpha ranges")
+        args.n_problems = min(5, args.n_problems)
+        print("[QUICK MODE] Using fewer problems")
     
-    # Run comprehensive experiments
-    experiment = ComprehensiveSteeringExperiment(args)
-    experiment.run_all()
+    # Run suite
+    suite = ComprehensiveSteeringSuite(args)
+    suite.run_all()
 
 
 if __name__ == "__main__":

@@ -291,7 +291,6 @@ def run_coconut_experiment(
     
     return sweep_results
 
-
 def run_verbal_experiment(
     model, tokenizer, problem_dict: dict, args
 ) -> dict:
@@ -312,16 +311,17 @@ def run_verbal_experiment(
     if args.verbose:
         print(f"  Steering vector norm: {steering_vector.norm().item():.4f}")
     
-    # Run sweep with debug output
+    # Make sure to use args.alphas, not the function default
     sweep_results = verbal_sweep(
         model, tokenizer, problem_dict, concept_a, concept_b,
-        alphas=args.alphas, device=args.device,
-        steering_vector=steering_vector, sweep_dim=args.sweep_dim,
+        alphas=args.alphas,  # This is key - use args.alphas
+        device=args.device,
+        steering_vector=steering_vector, 
+        sweep_dim=args.sweep_dim,
         verbose=args.verbose
     )
     
     return sweep_results
-
 
 def construct_semantic_steering_vector(
     model, tokenizer, concept_a: str, concept_b: str, device: str = "cuda"

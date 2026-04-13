@@ -281,6 +281,7 @@ def run_verbal_steering_sweep(
     device: str = "cuda",
     steering_vector: Optional[torch.Tensor] = None,
     sweep_dim: str = 'step',
+    verbose: bool = False,  # Add this parameter
 ) -> Dict:
     """
     Run a systematic sweep over intervention parameters for verbal CoT.
