@@ -15,6 +15,37 @@ from typing import Dict, List, Optional, Tuple, Any
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# ---------------------------------------------------------------------------
+# Publication-quality style
+# ---------------------------------------------------------------------------
+plt.style.use('seaborn-v0_8-whitegrid')
+
+COCONUT_COLOR = '#4C72B0'
+VERBAL_COLOR  = '#C44E52'
+ACCENT_COLOR  = '#55A868'
+NEUTRAL_COLOR = '#8C8C8C'
+
+plt.rcParams.update({
+    'font.family':        'sans-serif',
+    'font.size':          12,
+    'axes.labelsize':     13,
+    'axes.titlesize':     14,
+    'axes.titleweight':   'bold',
+    'axes.spines.top':    False,
+    'axes.spines.right':  False,
+    'axes.grid':          True,
+    'grid.alpha':         0.35,
+    'grid.linewidth':     0.8,
+    'legend.fontsize':    11,
+    'legend.framealpha':  0.85,
+    'legend.edgecolor':   '0.8',
+    'xtick.labelsize':    11,
+    'ytick.labelsize':    11,
+    'figure.dpi':         150,
+    'savefig.dpi':        300,
+    'savefig.bbox':       'tight',
+})
+
 
 # ---------------------------------------------------------------------------
 # Key-coercion helpers
@@ -264,17 +295,18 @@ def visualize_steering_sweep(
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
+        vmax = max(abs(matrix).max(), 1e-6)
         im = axes[0].imshow(matrix, cmap='RdBu_r', aspect='auto',
-                            vmin=-abs(matrix).max(), vmax=abs(matrix).max())
+                            vmin=-vmax, vmax=vmax)
         axes[0].set_xticks(range(len(layers)))
         axes[0].set_xticklabels(layers)
         axes[0].set_yticks(range(len(steps)))
         axes[0].set_yticklabels(steps)
         axes[0].set_xlabel('Layer')
         axes[0].set_ylabel('Step')
-        # ASCII: 'x' instead of multiplication sign
-        axes[0].set_title(f'{title_prefix}Effect Size by Step x Layer (alpha={alpha})')
-        plt.colorbar(im, ax=axes[0])
+        axes[0].set_title(f'{title_prefix}Effect Size — Step × Layer  (α={alpha})')
+        cb = plt.colorbar(im, ax=axes[0], fraction=0.046, pad=0.04)
+        cb.ax.tick_params(labelsize=10)
 
         flip_rates = []
         for step in steps:
@@ -287,15 +319,16 @@ def visualize_steering_sweep(
                     step_flips.append(1.0 if res_at_alpha.get('answer_flipped', False) else 0.0)
             flip_rates.append(np.mean(step_flips) if step_flips else 0)
 
-        axes[1].bar(range(len(steps)), flip_rates)
+        axes[1].bar(range(len(steps)), flip_rates, color=COCONUT_COLOR,
+                    width=0.6, edgecolor='white')
         axes[1].set_xticks(range(len(steps)))
         axes[1].set_xticklabels(steps)
         axes[1].set_xlabel('Step')
         axes[1].set_ylabel('Flip Rate')
         axes[1].set_title(f'{title_prefix}Logical Flip Rate by Step')
-        axes[1].set_ylim(0, 1)
+        axes[1].set_ylim(0, 1.05)
 
-        plt.tight_layout()
+        fig.tight_layout(pad=2.0)
 
     elif has_step:
         steps = []
@@ -322,29 +355,34 @@ def visualize_steering_sweep(
         flip_rates = np.array(flip_rates)[sorted_indices]
         prob_shifts = np.array(prob_shifts)[sorted_indices]
 
-        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
 
-        axes[0].bar(steps, effect_sizes,
-                    color=['red' if es < 0 else 'blue' for es in effect_sizes])
-        axes[0].axhline(y=0, color='black', linestyle='-', linewidth=0.5)
+        bar_colors_es = [VERBAL_COLOR if es < 0 else COCONUT_COLOR
+                         for es in effect_sizes]
+        axes[0].bar(steps, effect_sizes, color=bar_colors_es,
+                    edgecolor='white', linewidth=0)
+        axes[0].axhline(y=0, color='#333333', linewidth=1.2)
         axes[0].set_xlabel('Reasoning Step')
         axes[0].set_ylabel('Effect Size')
-        axes[0].set_title(f'{title_prefix}Steering Effect by Step (alpha={alpha})')
+        axes[0].set_title(f'{title_prefix}Steering Effect by Step  (α={alpha})')
 
-        axes[1].bar(steps, flip_rates, color='green', alpha=0.7)
+        axes[1].bar(steps, flip_rates, color=ACCENT_COLOR,
+                    alpha=0.85, edgecolor='white')
         axes[1].set_xlabel('Reasoning Step')
         axes[1].set_ylabel('Flip Rate')
         axes[1].set_title(f'{title_prefix}Logical Flip Rate by Step')
-        axes[1].set_ylim(0, 1)
+        axes[1].set_ylim(0, 1.05)
 
-        axes[2].bar(steps, prob_shifts,
-                    color=['red' if ps < 0 else 'blue' for ps in prob_shifts])
-        axes[2].axhline(y=0, color='black', linestyle='-', linewidth=0.5)
+        bar_colors_ps = [VERBAL_COLOR if ps < 0 else COCONUT_COLOR
+                         for ps in prob_shifts]
+        axes[2].bar(steps, prob_shifts, color=bar_colors_ps,
+                    edgecolor='white', linewidth=0)
+        axes[2].axhline(y=0, color='#333333', linewidth=1.2)
         axes[2].set_xlabel('Reasoning Step')
         axes[2].set_ylabel('Probability Shift')
         axes[2].set_title(f'{title_prefix}Probability Shift by Step')
 
-        plt.tight_layout()
+        fig.tight_layout(pad=2.0)
 
     elif has_layer:
         layers = []
@@ -364,26 +402,28 @@ def visualize_steering_sweep(
         effect_sizes = np.array(effect_sizes)[sorted_indices]
         flip_rates = np.array(flip_rates)[sorted_indices]
 
-        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 
-        axes[0].bar(layers,
-                    effect_sizes,
-                    color=['red' if es < 0 else 'blue' for es in effect_sizes])
-        axes[0].axhline(y=0, color='black', linestyle='-', linewidth=0.5)
+        bar_colors_es = [VERBAL_COLOR if es < 0 else COCONUT_COLOR
+                         for es in effect_sizes]
+        axes[0].bar(layers, effect_sizes, color=bar_colors_es,
+                    edgecolor='white', linewidth=0)
+        axes[0].axhline(y=0, color='#333333', linewidth=1.2)
         axes[0].set_xlabel('Transformer Layer')
         axes[0].set_ylabel('Effect Size')
-        axes[0].set_title(f'{title_prefix}Steering Effect by Layer (alpha={alpha})')
+        axes[0].set_title(f'{title_prefix}Steering Effect by Layer  (α={alpha})')
 
-        axes[1].bar(layers, flip_rates, color='green', alpha=0.7)
+        axes[1].bar(layers, flip_rates, color=ACCENT_COLOR,
+                    alpha=0.85, edgecolor='white')
         axes[1].set_xlabel('Transformer Layer')
         axes[1].set_ylabel('Flip Rate')
         axes[1].set_title(f'{title_prefix}Logical Flip Rate by Layer')
-        axes[1].set_ylim(0, 1)
+        axes[1].set_ylim(0, 1.05)
 
-        plt.tight_layout()
+        fig.tight_layout(pad=2.0)
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path)
         print(f"Figure saved to {save_path}")
 
     plt.show()
@@ -398,47 +438,49 @@ def plot_dose_response_comparison(
     coconut_curve = compute_dose_response_curve(coconut_results)
     verbal_curve = compute_dose_response_curve(verbal_results)
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
 
+    shared_line_kw = dict(linewidth=2.5, markersize=8)
+
+    # Panel 0 — raw effect
     axes[0].plot(coconut_curve['alphas'], coconut_curve['changes'],
-                 'o-', label='Coconut', linewidth=2, markersize=8)
+                 'o-', color=COCONUT_COLOR, label='Coconut', **shared_line_kw)
     axes[0].plot(verbal_curve['alphas'], verbal_curve['changes'],
-                 's-', label='Verbal CoT', linewidth=2, markersize=8)
-    axes[0].axhline(y=0, color='black', linestyle='--', linewidth=0.5)
-    # ASCII: 'alpha' instead of the Greek letter
-    axes[0].set_xlabel('Steering Multiplier (alpha)')
+                 's--', color=VERBAL_COLOR, label='Verbal CoT', **shared_line_kw)
+    axes[0].axhline(y=0, color=NEUTRAL_COLOR, linewidth=1.0, linestyle=':')
+    axes[0].set_xlabel('Steering Multiplier (α)')
     axes[0].set_ylabel('Change in Logit Difference')
     axes[0].set_title('Raw Effect Size')
     axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
 
+    # Panel 1 — normalized effect
     axes[1].plot(coconut_curve['alphas'], coconut_curve['normalized_changes'],
-                 'o-', label='Coconut', linewidth=2, markersize=8)
+                 'o-', color=COCONUT_COLOR, label='Coconut', **shared_line_kw)
     axes[1].plot(verbal_curve['alphas'], verbal_curve['normalized_changes'],
-                 's-', label='Verbal CoT', linewidth=2, markersize=8)
-    axes[1].axhline(y=0, color='black', linestyle='--', linewidth=0.5)
-    axes[1].set_xlabel('Steering Multiplier (alpha)')
+                 's--', color=VERBAL_COLOR, label='Verbal CoT', **shared_line_kw)
+    axes[1].axhline(y=0, color=NEUTRAL_COLOR, linewidth=1.0, linestyle=':')
+    axes[1].set_xlabel('Steering Multiplier (α)')
     axes[1].set_ylabel('Normalized Change')
     axes[1].set_title('Normalized Effect Size')
     axes[1].legend()
-    axes[1].grid(True, alpha=0.3)
 
+    # Panel 2 — output probability
     axes[2].plot(coconut_curve['alphas'], coconut_curve['probs'],
-                 'o-', label='Coconut', linewidth=2, markersize=8)
+                 'o-', color=COCONUT_COLOR, label='Coconut', **shared_line_kw)
     axes[2].plot(verbal_curve['alphas'], verbal_curve['probs'],
-                 's-', label='Verbal CoT', linewidth=2, markersize=8)
-    axes[2].axhline(y=0.5, color='gray', linestyle='--', linewidth=0.5, alpha=0.5)
-    axes[2].set_xlabel('Steering Multiplier (alpha)')
+                 's--', color=VERBAL_COLOR, label='Verbal CoT', **shared_line_kw)
+    axes[2].axhline(y=0.5, color=NEUTRAL_COLOR, linewidth=1.0,
+                    linestyle=':', label='Chance')
+    axes[2].set_xlabel('Steering Multiplier (α)')
     axes[2].set_ylabel('P(concept_a)')
     axes[2].set_title('Output Probability')
     axes[2].set_ylim(0, 1)
     axes[2].legend()
-    axes[2].grid(True, alpha=0.3)
 
-    plt.tight_layout()
+    fig.tight_layout(pad=2.0)
 
     if save_path:
-        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.savefig(save_path)
         print(f"Figure saved to {save_path}")
 
     plt.show()

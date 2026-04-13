@@ -1,6 +1,13 @@
 # scripts/steering/analyze_steering.py
 """
 Analyze steering experiment results with hypothesis testing for CogAI paper.
+
+Generates one figure per hypothesis with all alpha thresholds overlaid,
+so a single run replaces the old per-alpha loop.
+
+Usage:
+    python analyze_steering.py --results_dir results/steering/steering_suite_...
+    python analyze_steering.py --results_dir ... --alphas 1 2 5 10 20 50
 """
 
 import sys
@@ -8,91 +15,84 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import json
+import math
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import seaborn as sns
 from typing import Dict, List, Optional, Tuple, Any
 from scipy.stats import chi2_contingency
 
-# Set style
-plt.style.use('seaborn-v0_8-paper')
-sns.set_palette("Set2")
-plt.rcParams['font.size'] = 11
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['figure.dpi'] = 150
+# ---------------------------------------------------------------------------
+# Publication-quality style
+# ---------------------------------------------------------------------------
+plt.style.use('seaborn-v0_8-whitegrid')
+sns.set_palette("deep")
 
+COCONUT_COLOR = '#4C72B0'
+VERBAL_COLOR  = '#C44E52'
+ACCENT_COLOR  = '#55A868'
+NEUTRAL_COLOR = '#8C8C8C'
+ALPHA_CMAP    = plt.cm.viridis
+
+plt.rcParams.update({
+    'font.family':        'sans-serif',
+    'font.size':          12,
+    'axes.labelsize':     13,
+    'axes.titlesize':     14,
+    'axes.titleweight':   'bold',
+    'axes.spines.top':    False,
+    'axes.spines.right':  False,
+    'axes.grid':          True,
+    'grid.alpha':         0.35,
+    'grid.linewidth':     0.8,
+    'legend.fontsize':    10,
+    'legend.framealpha':  0.85,
+    'legend.edgecolor':   '0.8',
+    'xtick.labelsize':    11,
+    'ytick.labelsize':    11,
+    'figure.dpi':         150,
+    'savefig.dpi':        300,
+    'savefig.bbox':       'tight',
+})
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Analyze steering results")
-    parser.add_argument("--results_dir", type=str, 
+    parser.add_argument("--results_dir", type=str,
                         default="results/steering/steering_suite_20260413_010514",
                         help="Directory containing experiment results")
     parser.add_argument("--output_dir", type=str, default=None,
                         help="Output directory for figures")
-    parser.add_argument("--alpha_threshold", type=float, default=10.0,
-                        help="Alpha value for flip rate calculation")
+    parser.add_argument("--alphas", type=float, nargs="+",
+                        default=[1, 2, 5, 10, 20, 50],
+                        help="Alpha thresholds to overlay (default: 1 2 5 10 20 50)")
+    # Keep old --alpha_threshold for backwards-compat: treated as a single alpha
+    parser.add_argument("--alpha_threshold", type=float, default=None,
+                        help="(Legacy) single alpha threshold -- use --alphas instead")
     parser.add_argument("--verbose", action="store_true")
     return parser.parse_args()
 
 
+# ---------------------------------------------------------------------------
+# Data loading
+# ---------------------------------------------------------------------------
+
 def load_steering_results(filepath: str) -> Dict:
-    """Load steering results from JSON file."""
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
-def compute_flip_metrics_from_results(results: Dict, alpha_threshold: float = 10.0) -> Dict:
-    """
-    Compute flip metrics directly from loaded results.
-    Returns dict with config_name -> metrics.
-    """
-    metrics = {}
-    
-    # Get all results
-    all_results = results.get('results', [])
-    
-    for problem_result in all_results:
-        problem_idx = problem_result.get('problem_idx', -1)
-        answer_flipped = problem_result.get('answer_flipped', False)
-        sweep_results = problem_result.get('sweep_results', {})
-        
-        # For each configuration in sweep_results
-        for config_name, config_data in sweep_results.items():
-            if config_name == 'metadata':
-                continue
-            
-            if config_name not in metrics:
-                metrics[config_name] = {
-                    'flipped': False,
-                    'effect_size': 0,
-                    'prob_shift': 0,
-                    'n_problems': 0,
-                    'flipped_count': 0
-                }
-            
-            metrics[config_name]['n_problems'] += 1
-            if answer_flipped:
-                metrics[config_name]['flipped_count'] += 1
-                metrics[config_name]['flipped'] = True
-    
-    # Convert to flip rates
-    for config_name in metrics:
-        metrics[config_name]['flip_rate'] = metrics[config_name]['flipped_count'] / metrics[config_name]['n_problems']
-    
-    return metrics
-
-
 def find_experiment_results(results_dir: str, verbose: bool = False) -> Dict[str, Dict]:
-    """Find and load all experiment results once."""
     all_results = {}
-    
     for exp_name in os.listdir(results_dir):
         exp_path = os.path.join(results_dir, exp_name)
         results_file = os.path.join(exp_path, "steering_results.json")
-        
         if os.path.exists(results_file):
             try:
                 all_results[exp_name] = load_steering_results(results_file)
@@ -100,28 +100,22 @@ def find_experiment_results(results_dir: str, verbose: bool = False) -> Dict[str
                     print(f"  Loaded: {exp_name}")
             except Exception as e:
                 print(f"  Warning: Could not load {exp_name}: {e}")
-    
     return all_results
 
 
 def extract_comparison_data(all_results: Dict[str, Dict]) -> Tuple[Dict, Dict]:
-    """Extract Coconut and Verbal results from Experiment 7."""
     coconut_results = None
     verbal_results = None
-    
     for exp_name, results in all_results.items():
         if 'comparison_coconut' in exp_name:
             coconut_results = results
         elif 'comparison_verbal' in exp_name:
             verbal_results = results
-    
     return coconut_results, verbal_results
 
 
 def extract_difficulty_data(all_results: Dict[str, Dict]) -> Dict:
-    """Extract difficulty scaling results."""
     difficulty_results = {}
-    
     for exp_name, results in all_results.items():
         if 'difficulty' in exp_name:
             if '3hop' in exp_name:
@@ -130,372 +124,458 @@ def extract_difficulty_data(all_results: Dict[str, Dict]) -> Dict:
                 difficulty_results[4] = results
             elif '5hop' in exp_name:
                 difficulty_results[5] = results
-    
     return difficulty_results
 
 
-def test_hypothesis_1(coconut_results: Dict, verbal_results: Dict, alpha_threshold: float = 10.0) -> Dict:
-    """H1: Bottleneck Hypothesis - Coconut has higher flip rate."""
+# ---------------------------------------------------------------------------
+# Per-alpha metric computation
+# ---------------------------------------------------------------------------
+
+def compute_flip_metrics_from_results(results: Dict, alpha_threshold: float) -> Dict:
+    """
+    Return config_name -> metrics for a single alpha threshold.
+    Looks inside sweep_results[config][alpha] for per-alpha flip data;
+    falls back to top-level answer_flipped when that structure is absent.
+    """
+    config_data_map: Dict[str, Dict] = {}
+
+    for problem_result in results.get('results', []):
+        sweep_results = problem_result.get('sweep_results', {})
+        top_flipped   = problem_result.get('answer_flipped', False)
+
+        if not sweep_results:
+            # No sweep structure — use top-level flag under a synthetic config
+            key = '_global'
+            if key not in config_data_map:
+                config_data_map[key] = {'flipped': [], 'n': 0}
+            config_data_map[key]['n'] += 1
+            config_data_map[key]['flipped'].append(top_flipped)
+            continue
+
+        for config_name, config_content in sweep_results.items():
+            if config_name == 'metadata' or not isinstance(config_content, dict):
+                continue
+            if config_name not in config_data_map:
+                config_data_map[config_name] = {'flipped': [], 'n': 0}
+            config_data_map[config_name]['n'] += 1
+
+            # Find the closest stored alpha
+            alpha_keys = []
+            for k in config_content.keys():
+                try:
+                    alpha_keys.append(float(k))
+                except ValueError:
+                    pass
+
+            if alpha_keys:
+                closest = min(alpha_keys, key=lambda x: abs(x - alpha_threshold))
+                entry = config_content.get(str(closest)) or config_content.get(closest) or {}
+                flipped = entry.get('answer_flipped', False)
+            else:
+                flipped = top_flipped
+
+            config_data_map[config_name]['flipped'].append(flipped)
+
+    metrics = {}
+    for config_name, data in config_data_map.items():
+        n = data['n']
+        fc = sum(data['flipped'])
+        metrics[config_name] = {
+            'flipped': fc > 0,
+            'n_problems': n,
+            'flipped_count': fc,
+            'flip_rate': fc / n if n > 0 else 0.0,
+        }
+    return metrics
+
+
+def flip_rate_across_alphas(results: Dict, alphas: List[float]) -> Dict[float, float]:
+    """Return {alpha: mean_flip_rate} over all configs for a results dict."""
+    out = {}
+    for a in alphas:
+        metrics = compute_flip_metrics_from_results(results, a)
+        out[a] = float(np.mean([m['flip_rate'] for m in metrics.values()])) if metrics else 0.0
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Hypothesis testing
+# ---------------------------------------------------------------------------
+
+def test_hypothesis_1(coconut_results: Dict, verbal_results: Dict,
+                      alphas: List[float]) -> Dict:
     print("\n" + "="*70)
     print("HYPOTHESIS 1: Bottleneck Hypothesis")
     print("Coconut has higher causal steering efficacy than Verbal CoT")
     print("="*70)
-    
-    # Compute metrics
-    coconut_metrics = compute_flip_metrics_from_results(coconut_results, alpha_threshold)
-    verbal_metrics = compute_flip_metrics_from_results(verbal_results, alpha_threshold)
-    
-    # Get flip rates (average across configs)
-    coconut_flip_rate = np.mean([m['flip_rate'] for m in coconut_metrics.values()])
-    verbal_flip_rate = np.mean([m['flip_rate'] for m in verbal_metrics.values()])
-    
-    coconut_flipped = sum(m['flipped_count'] for m in coconut_metrics.values())
-    coconut_total = sum(m['n_problems'] for m in coconut_metrics.values())
-    verbal_flipped = sum(m['flipped_count'] for m in verbal_metrics.values())
-    verbal_total = sum(m['n_problems'] for m in verbal_metrics.values())
-    
-    # Statistical test
+
+    coconut_by_alpha = flip_rate_across_alphas(coconut_results, alphas)
+    verbal_by_alpha  = flip_rate_across_alphas(verbal_results,  alphas)
+
+    mid_alpha = sorted(alphas)[len(alphas) // 2]
+    c_metrics = compute_flip_metrics_from_results(coconut_results, mid_alpha)
+    v_metrics = compute_flip_metrics_from_results(verbal_results,  mid_alpha)
+
+    c_flipped = sum(m['flipped_count'] for m in c_metrics.values())
+    c_total   = sum(m['n_problems']    for m in c_metrics.values())
+    v_flipped = sum(m['flipped_count'] for m in v_metrics.values())
+    v_total   = sum(m['n_problems']    for m in v_metrics.values())
+
     contingency = np.array([
-        [coconut_flipped, coconut_total - coconut_flipped],
-        [verbal_flipped, verbal_total - verbal_flipped]
+        [c_flipped, c_total - c_flipped],
+        [v_flipped, v_total - v_flipped],
     ])
-    chi2, p_value, dof, expected = chi2_contingency(contingency)
-    
-    # Effect size (Cohen's h)
-    import math
-    h1 = 2 * math.asin(math.sqrt(coconut_flip_rate))
-    h2 = 2 * math.asin(math.sqrt(verbal_flip_rate))
-    cohens_h = h1 - h2
-    
-    results = {
+    chi2, p_value, dof, _ = chi2_contingency(contingency)
+
+    c_rate = coconut_by_alpha[mid_alpha]
+    v_rate = verbal_by_alpha[mid_alpha]
+    cohens_h = (2 * math.asin(math.sqrt(max(0, min(1, c_rate)))) -
+                2 * math.asin(math.sqrt(max(0, min(1, v_rate)))))
+
+    for a in sorted(alphas):
+        print(f"  alpha={a:>5g}  Coconut {coconut_by_alpha[a]:.1%}  "
+              f"Verbal {verbal_by_alpha[a]:.1%}")
+    print(f"\nChi-square (alpha={mid_alpha:g}): chi2={chi2:.2f}, p={p_value:.4e}")
+    print(f"Cohen's h = {cohens_h:.3f}")
+    print(f"H1 SUPPORTED: {c_rate > v_rate}")
+
+    return {
         "hypothesis": "H1 - Bottleneck Hypothesis",
-        "coconut_flip_rate": float(coconut_flip_rate),
-        "verbal_flip_rate": float(verbal_flip_rate),
-        "coconut_n": int(coconut_total),
-        "verbal_n": int(verbal_total),
-        "coconut_flipped": int(coconut_flipped),
-        "verbal_flipped": int(verbal_flipped),
-        "chi2_statistic": float(chi2),
-        "p_value": float(p_value),
+        "alphas": sorted(alphas),
+        "coconut_by_alpha": {str(a): v for a, v in coconut_by_alpha.items()},
+        "verbal_by_alpha":  {str(a): v for a, v in verbal_by_alpha.items()},
+        "coconut_flip_rate": float(c_rate),
+        "verbal_flip_rate":  float(v_rate),
+        "coconut_n": int(c_total), "verbal_n": int(v_total),
+        "coconut_flipped": int(c_flipped), "verbal_flipped": int(v_flipped),
+        "chi2_statistic": float(chi2), "p_value": float(p_value),
         "cohens_h": float(cohens_h),
         "significant": bool(p_value < 0.05),
-        "supported": bool(coconut_flip_rate > verbal_flip_rate)
+        "supported": bool(c_rate > v_rate),
+        "mid_alpha": float(mid_alpha),
     }
-    
-    print(f"\nCoconut: {coconut_flip_rate:.1%} flip rate ({coconut_flipped}/{coconut_total})")
-    print(f"Verbal: {verbal_flip_rate:.1%} flip rate ({verbal_flipped}/{verbal_total})")
-    print(f"\nChi-square: χ² = {chi2:.2f}, p = {p_value:.4e}")
-    print(f"Cohen's h = {cohens_h:.3f}")
-    print(f"\nH1 SUPPORTED: {results['supported']}")
-    
-    return results
 
 
-def test_hypothesis_2(coconut_results: Dict, verbal_results: Dict, alpha_threshold: float = 10.0) -> Dict:
-    """H2: Separation Hypothesis - Verbal shows incoherence."""
+def test_hypothesis_2(coconut_results: Dict, verbal_results: Dict,
+                      alphas: List[float]) -> Dict:
     print("\n" + "="*70)
     print("HYPOTHESIS 2: Separation Hypothesis")
     print("="*70)
-    
-    coconut_metrics = compute_flip_metrics_from_results(coconut_results, alpha_threshold)
-    verbal_metrics = compute_flip_metrics_from_results(verbal_results, alpha_threshold)
-    
-    coconut_incoherence = 1 - np.mean([m['flip_rate'] for m in coconut_metrics.values()])
-    verbal_incoherence = 1 - np.mean([m['flip_rate'] for m in verbal_metrics.values()])
-    
-    results = {
+
+    coconut_by_alpha = flip_rate_across_alphas(coconut_results, alphas)
+    verbal_by_alpha  = flip_rate_across_alphas(verbal_results,  alphas)
+    coconut_incoh = {a: 1 - v for a, v in coconut_by_alpha.items()}
+    verbal_incoh  = {a: 1 - v for a, v in verbal_by_alpha.items()}
+
+    mid_alpha = sorted(alphas)[len(alphas) // 2]
+    for a in sorted(alphas):
+        print(f"  alpha={a:>5g}  Coconut incoh {coconut_incoh[a]:.1%}  "
+              f"Verbal incoh {verbal_incoh[a]:.1%}")
+    print(f"\nH2 SUPPORTED: {verbal_incoh[mid_alpha] > coconut_incoh[mid_alpha]}")
+
+    return {
         "hypothesis": "H2 - Separation Hypothesis",
-        "coconut_incoherence_rate": float(coconut_incoherence),
-        "verbal_incoherence_rate": float(verbal_incoherence),
-        "supported": bool(verbal_incoherence > coconut_incoherence)
+        "alphas": sorted(alphas),
+        "coconut_incoh_by_alpha": {str(a): v for a, v in coconut_incoh.items()},
+        "verbal_incoh_by_alpha":  {str(a): v for a, v in verbal_incoh.items()},
+        "coconut_incoherence_rate": float(coconut_incoh[mid_alpha]),
+        "verbal_incoherence_rate":  float(verbal_incoh[mid_alpha]),
+        "supported": bool(verbal_incoh[mid_alpha] > coconut_incoh[mid_alpha]),
     }
-    
-    print(f"\nCoconut incoherence: {coconut_incoherence:.1%}")
-    print(f"Verbal incoherence: {verbal_incoherence:.1%}")
-    print(f"\nH2 SUPPORTED: {results['supported']}")
-    
-    return results
 
 
-def test_hypothesis_3(difficulty_results: Dict, alpha_threshold: float = 10.0) -> Dict:
-    """H3: Difficulty Scaling - Gap widens with hop count."""
+def test_hypothesis_3(difficulty_results: Dict, alphas: List[float]) -> Dict:
     print("\n" + "="*70)
     print("HYPOTHESIS 3: Difficulty Scaling")
     print("="*70)
-    
+
     hops = sorted(difficulty_results.keys())
-    flip_rates = []
-    
+    flip_by_alpha: Dict[float, List[float]] = {a: [] for a in alphas}
     for h in hops:
-        results = difficulty_results[h]
-        metrics = compute_flip_metrics_from_results(results, alpha_threshold)
-        flip_rate = np.mean([m['flip_rate'] for m in metrics.values()])
-        flip_rates.append(flip_rate)
-    
-    # Test for trend
-    if len(hops) >= 2:
-        correlation = np.corrcoef(hops, flip_rates)[0, 1]
-        slope = np.polyfit(hops, flip_rates, 1)[0]
-        increasing = slope > 0
-    else:
-        correlation = 0
-        slope = 0
-        increasing = False
-    
-    results = {
+        rates = flip_rate_across_alphas(difficulty_results[h], alphas)
+        for a in alphas:
+            flip_by_alpha[a].append(rates[a])
+
+    mid_alpha = sorted(alphas)[len(alphas) // 2]
+    mid_rates = flip_by_alpha[mid_alpha]
+    slope = float(np.polyfit(hops, mid_rates, 1)[0]) if len(hops) >= 2 else 0.0
+    corr  = float(np.corrcoef(hops, mid_rates)[0, 1]) if len(hops) >= 2 else 0.0
+
+    print(f"\nHop analysis (alpha={mid_alpha:g}):")
+    for h, r in zip(hops, mid_rates):
+        print(f"  {h} hops: {r:.1%}")
+    print(f"\nTrend: slope={slope:.3f}, r={corr:.3f}")
+    print(f"H3 SUPPORTED: {slope > 0}")
+
+    return {
         "hypothesis": "H3 - Difficulty Scaling",
+        "alphas": sorted(alphas),
         "hops": [int(h) for h in hops],
-        "flip_rates": [float(r) for r in flip_rates],
-        "slope": float(slope),
-        "correlation": float(correlation),
-        "increasing": bool(increasing),
-        "supported": bool(increasing)
+        "flip_by_alpha": {str(a): flip_by_alpha[a] for a in alphas},
+        "flip_rates": [float(r) for r in mid_rates],
+        "slope": slope, "correlation": corr,
+        "increasing": slope > 0, "supported": slope > 0,
+        "mid_alpha": float(mid_alpha),
     }
-    
-    print(f"\nHop count analysis:")
-    for h, rate in zip(hops, flip_rates):
-        print(f"  {h} hops: Flip rate = {rate:.1%}")
-    
-    print(f"\nTrend: slope = {slope:.3f}, correlation = {correlation:.3f}")
-    print(f"\nH3 SUPPORTED: {results['supported']}")
-    
-    return results
+
+
+# ---------------------------------------------------------------------------
+# Figure creators — all alphas overlaid
+# ---------------------------------------------------------------------------
+
+def _alpha_colors(alphas):
+    n = len(alphas)
+    return [ALPHA_CMAP(i / max(n - 1, 1)) for i in range(n)]
 
 
 def create_figure_h1(h1_results: Dict, output_dir: str):
-    """Create figure for Hypothesis 1."""
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    
-    models = ['Coconut', 'Verbal CoT']
-    flip_rates = [h1_results['coconut_flip_rate'], h1_results['verbal_flip_rate']]
-    colors = ['#2E86AB', '#A23B72']
-    
-    bars = axes[0].bar(models, flip_rates, color=colors, edgecolor='black', linewidth=1.5)
+    """
+    Left:  grouped bar chart — Coconut vs Verbal at every alpha.
+    Right: dose-response line chart — flip rate vs alpha for each model.
+    """
+    alphas  = h1_results['alphas']
+    c_rates = [h1_results['coconut_by_alpha'][str(a)] for a in alphas]
+    v_rates = [h1_results['verbal_by_alpha'][str(a)]  for a in alphas]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+
+    # Grouped bars
+    x, w = np.arange(len(alphas)), 0.35
+    axes[0].bar(x - w/2, c_rates, width=w, color=COCONUT_COLOR,
+                label='Coconut', edgecolor='white')
+    axes[0].bar(x + w/2, v_rates, width=w, color=VERBAL_COLOR,
+                label='Verbal CoT', edgecolor='white')
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels([f'a={a:g}' for a in alphas], rotation=30, ha='right')
     axes[0].set_ylabel('Logical Flip Rate')
-    axes[0].set_title('H1: Causal Steering Efficacy', fontweight='bold')
-    axes[0].set_ylim(0, 1.1)
-    
-    for bar, rate in zip(bars, flip_rates):
-        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, 
-                    f'{rate:.1%}', ha='center', va='bottom', fontweight='bold')
-    
+    axes[0].set_title('H1: Flip Rate by Alpha Threshold')
+    axes[0].set_ylim(0, 1.15)
+    axes[0].legend()
+
+    # Dose-response lines
+    axes[1].plot(alphas, c_rates, 'o-', color=COCONUT_COLOR, linewidth=2.5,
+                 markersize=8, markerfacecolor='white', markeredgewidth=2.5,
+                 label='Coconut')
+    axes[1].plot(alphas, v_rates, 's--', color=VERBAL_COLOR, linewidth=2.5,
+                 markersize=8, markerfacecolor='white', markeredgewidth=2.5,
+                 label='Verbal CoT')
+
     if h1_results['significant']:
-        axes[0].text(0.5, 0.95, f'*** p < 0.001\nCohen\'s h = {h1_results["cohens_h"]:.2f}', 
-                    ha='center', transform=axes[0].transAxes, fontsize=10,
-                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-    
-    # Effect size gauge
-    ax_gauge = axes[1]
-    ax_gauge.set_xlim(0, 1.2)
-    ax_gauge.set_ylim(0, 1)
-    
-    ax_gauge.axvspan(0, 0.2, alpha=0.3, color='green', label='Small')
-    ax_gauge.axvspan(0.2, 0.5, alpha=0.3, color='yellow', label='Medium')
-    ax_gauge.axvspan(0.5, 0.8, alpha=0.3, color='orange', label='Large')
-    ax_gauge.axvspan(0.8, 1.2, alpha=0.3, color='red', label='Very Large')
-    
-    h_val = min(h1_results['cohens_h'], 1.2)
-    ax_gauge.arrow(0, 0.5, h_val, 0, head_width=0.1, head_length=0.05, 
-                   fc='black', ec='black', linewidth=2)
-    ax_gauge.plot(h_val, 0.5, 'o', color='black', markersize=10)
-    
-    ax_gauge.set_xlim(0, max(1.0, h_val + 0.1))
-    ax_gauge.set_ylim(0.2, 0.8)
-    ax_gauge.set_xlabel("Cohen's h Effect Size")
-    ax_gauge.set_title(f"Effect Size: h = {h1_results['cohens_h']:.2f}")
-    ax_gauge.set_yticks([])
-    ax_gauge.legend(loc='upper right', fontsize=8)
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figure_h1_bottleneck.png'), dpi=300, bbox_inches='tight')
+        p   = h1_results['p_value']
+        sig = '***' if p < 0.001 else ('**' if p < 0.01 else '*')
+        axes[1].annotate(
+            f"{sig}  Cohen's h = {h1_results['cohens_h']:.2f}\n"
+            f"(at a = {h1_results['mid_alpha']:g})",
+            xy=(0.97, 0.97), xycoords='axes fraction', ha='right', va='top',
+            fontsize=10,
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='#EFF3FF',
+                      edgecolor='#9BAFD9', alpha=0.9))
+
+    axes[1].set_xlabel('Steering Multiplier (alpha)')
+    axes[1].set_ylabel('Logical Flip Rate')
+    axes[1].set_title('H1: Dose-Response Curve')
+    axes[1].set_ylim(0, 1.15)
+    axes[1].legend()
+
+    fig.tight_layout(pad=2.0)
+    plt.savefig(os.path.join(output_dir, 'figure_h1_bottleneck.png'))
     plt.close()
-    print(f"  Saved: figure_h1_bottleneck.png")
+    print("  Saved: figure_h1_bottleneck.png")
 
 
 def create_figure_h2(h2_results: Dict, output_dir: str):
-    """Create figure for Hypothesis 2."""
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    
-    models = ['Coconut', 'Verbal CoT']
-    incoherence = [h2_results['coconut_incoherence_rate'], h2_results['verbal_incoherence_rate']]
-    colors = ['#2E86AB', '#A23B72']
-    
-    bars = axes[0].bar(models, incoherence, color=colors, edgecolor='black', linewidth=1.5)
+    """
+    Left:  incoherence dose-response lines for both models across all alphas.
+    Right: mechanistic diagram.
+    """
+    alphas  = h2_results['alphas']
+    c_incoh = [h2_results['coconut_incoh_by_alpha'][str(a)] for a in alphas]
+    v_incoh = [h2_results['verbal_incoh_by_alpha'][str(a)]  for a in alphas]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+
+    axes[0].plot(alphas, c_incoh, 'o-', color=COCONUT_COLOR, linewidth=2.5,
+                 markersize=8, markerfacecolor='white', markeredgewidth=2.5,
+                 label='Coconut')
+    axes[0].plot(alphas, v_incoh, 's--', color=VERBAL_COLOR, linewidth=2.5,
+                 markersize=8, markerfacecolor='white', markeredgewidth=2.5,
+                 label='Verbal CoT')
+    axes[0].set_xlabel('Steering Multiplier (alpha)')
     axes[0].set_ylabel('Incoherence Rate')
-    axes[0].set_title('H2: Steering-Induced Incoherence', fontweight='bold')
-    axes[0].set_ylim(0, 1.1)
-    
-    for bar, rate in zip(bars, incoherence):
-        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, 
-                    f'{rate:.1%}', ha='center', va='bottom', fontweight='bold')
-    
-    # Conceptual diagram
+    axes[0].set_title('H2: Incoherence vs Alpha')
+    axes[0].set_ylim(-0.05, 1.15)
+    axes[0].legend()
+
+    # Mechanistic diagram
     ax_diag = axes[1]
     ax_diag.set_xlim(0, 10)
     ax_diag.set_ylim(0, 10)
     ax_diag.axis('off')
-    ax_diag.set_title('Mechanistic Interpretation', fontweight='bold')
-    
-    # Coconut
-    ax_diag.text(2.5, 9, 'Coconut (Bottleneck)', ha='center', fontweight='bold', fontsize=10)
-    rect_coconut = plt.Rectangle((1, 5), 3, 2, facecolor='#2E86AB', alpha=0.5, edgecolor='black')
-    ax_diag.add_patch(rect_coconut)
-    ax_diag.text(2.5, 6, 'Latent\nBottleneck', ha='center', va='center', fontsize=9)
-    ax_diag.annotate('', xy=(2.5, 5), xytext=(2.5, 7), arrowprops=dict(arrowstyle='->', color='black'))
-    ax_diag.annotate('', xy=(2.5, 3), xytext=(2.5, 5), arrowprops=dict(arrowstyle='->', color='black'))
-    ax_diag.text(2.5, 4, 'Steering → Flip', ha='center', fontsize=8, color='green')
-    
-    # Verbal
-    ax_diag.text(7.5, 9, 'Verbal CoT (Parallel)', ha='center', fontweight='bold', fontsize=10)
-    rect_verbal1 = plt.Rectangle((6, 5), 1.5, 2, facecolor='#A23B72', alpha=0.5, edgecolor='black')
-    rect_verbal2 = plt.Rectangle((7.5, 5), 1.5, 2, facecolor='#A23B72', alpha=0.3, edgecolor='black')
-    ax_diag.add_patch(rect_verbal1)
-    ax_diag.add_patch(rect_verbal2)
-    ax_diag.text(6.75, 6, 'Verbal\nTrace', ha='center', va='center', fontsize=8)
-    ax_diag.text(8.25, 6, 'Answer\nPath', ha='center', va='center', fontsize=8)
-    ax_diag.annotate('', xy=(7.5, 3), xytext=(6.75, 5), arrowprops=dict(arrowstyle='->', color='red', linestyle='--'))
-    ax_diag.annotate('', xy=(8.25, 3), xytext=(8.25, 5), arrowprops=dict(arrowstyle='->', color='black'))
-    ax_diag.text(7.5, 4, 'Steering → Mismatch', ha='center', fontsize=8, color='red')
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figure_h2_separation.png'), dpi=300, bbox_inches='tight')
+    ax_diag.set_title('Mechanistic Interpretation')
+
+    def rounded_box(ax, x, y, w, h, color, label, fontsize=9):
+        rect = mpatches.FancyBboxPatch(
+            (x - w/2, y - h/2), w, h,
+            boxstyle='round,pad=0.15',
+            facecolor=color, edgecolor='white', linewidth=0, alpha=0.85, zorder=3)
+        ax.add_patch(rect)
+        ax.text(x, y, label, ha='center', va='center',
+                fontsize=fontsize, fontweight='bold', color='white', zorder=4)
+
+    arrow_kw    = dict(arrowstyle='->', color='#444444', lw=1.5,
+                       connectionstyle='arc3,rad=0')
+    red_arrow   = dict(arrowstyle='->', color=VERBAL_COLOR, lw=1.5,
+                       linestyle='dashed', connectionstyle='arc3,rad=0.25')
+    green_arrow = dict(arrowstyle='->', color=ACCENT_COLOR, lw=1.5)
+
+    ax_diag.text(2.5, 9.5, 'Coconut', ha='center', fontsize=10,
+                 fontweight='bold', color=COCONUT_COLOR)
+    rounded_box(ax_diag, 2.5, 7.5, 3.0, 1.0, COCONUT_COLOR, 'Latent Bottleneck')
+    rounded_box(ax_diag, 2.5, 5.5, 3.0, 1.0, '#6A9FCC',     'Steered State')
+    rounded_box(ax_diag, 2.5, 3.5, 3.0, 1.0, ACCENT_COLOR,  'Answer Flip (Y)')
+    ax_diag.annotate('', xy=(2.5, 6.05), xytext=(2.5, 7.0), arrowprops=arrow_kw)
+    ax_diag.annotate('', xy=(2.5, 4.05), xytext=(2.5, 5.0), arrowprops=green_arrow)
+
+    ax_diag.text(7.5, 9.5, 'Verbal CoT', ha='center', fontsize=10,
+                 fontweight='bold', color=VERBAL_COLOR)
+    rounded_box(ax_diag, 6.5, 7.5, 2.2, 1.0, VERBAL_COLOR, 'Verbal\nTrace')
+    rounded_box(ax_diag, 8.5, 7.5, 2.2, 1.0, '#E07070',    'Answer\nPath')
+    rounded_box(ax_diag, 7.5, 5.2, 3.0, 1.0, '#C98060',    'Mismatch (N)')
+    ax_diag.annotate('', xy=(7.2, 5.72), xytext=(6.5, 7.0), arrowprops=red_arrow)
+    ax_diag.annotate('', xy=(7.8, 5.72), xytext=(8.5, 7.0), arrowprops=arrow_kw)
+
+    fig.tight_layout(pad=2.0)
+    plt.savefig(os.path.join(output_dir, 'figure_h2_separation.png'))
     plt.close()
-    print(f"  Saved: figure_h2_separation.png")
+    print("  Saved: figure_h2_separation.png")
 
 
 def create_figure_h3(h3_results: Dict, output_dir: str):
-    """Create figure for Hypothesis 3."""
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    
-    hops = h3_results['hops']
-    flip_rates = h3_results['flip_rates']
-    
-    # Bar chart
-    x = np.arange(len(hops))
-    width = 0.6
-    
-    bars = axes[0].bar(x, flip_rates, width, color='#2E86AB', edgecolor='black', linewidth=1.5)
+    """
+    Left:  flip rate vs hop count — one line per alpha.
+    Right: flip rate vs alpha   — one line per hop count.
+    """
+    alphas = h3_results['alphas']
+    hops   = h3_results['hops']
+    flip_by_alpha = {float(a): h3_results['flip_by_alpha'][str(a)] for a in alphas}
+
+    colors_alpha = _alpha_colors(alphas)
+    colors_hop   = [ALPHA_CMAP(i / max(len(hops) - 1, 1)) for i in range(len(hops))]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+
+    # Flip rate vs hops, one line per alpha
+    for alpha, col in zip(alphas, colors_alpha):
+        rates = flip_by_alpha[alpha]
+        axes[0].plot(hops, rates, 'o-', color=col, linewidth=2,
+                     markersize=7, markerfacecolor='white', markeredgewidth=2,
+                     label=f'a={alpha:g}')
     axes[0].set_xlabel('Number of Reasoning Hops')
     axes[0].set_ylabel('Logical Flip Rate')
-    axes[0].set_title('H3: Difficulty Scaling', fontweight='bold')
-    axes[0].set_xticks(x)
-    axes[0].set_xticklabels(hops)
-    axes[0].set_ylim(0, 1.1)
-    
-    for bar, rate in zip(bars, flip_rates):
-        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, 
-                    f'{rate:.1%}', ha='center', va='bottom', fontsize=9)
-    
-    # Trend line
-    axes[1].plot(hops, flip_rates, 'o-', color='#D81B60', linewidth=2, markersize=8)
-    
-    if len(hops) >= 2:
-        z = np.polyfit(hops, flip_rates, 1)
-        p = np.poly1d(z)
-        axes[1].plot(hops, p(hops), '--', color='gray', alpha=0.7, 
-                    label=f'Trend (slope={z[0]:.3f})')
-        axes[1].legend()
-    
-    axes[1].set_xlabel('Number of Reasoning Hops')
-    axes[1].set_ylabel('Flip Rate')
-    axes[1].set_title(f'Gap Analysis: r = {h3_results["correlation"]:.3f}', fontweight='bold')
-    axes[1].grid(True, alpha=0.3)
-    axes[1].set_ylim(0, 1.1)
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'figure_h3_difficulty.png'), dpi=300, bbox_inches='tight')
+    axes[0].set_title('H3: Flip Rate vs Difficulty')
+    axes[0].set_xticks(hops)
+    axes[0].set_ylim(0, 1.15)
+    axes[0].legend(fontsize=9, ncol=2)
+
+    # Flip rate vs alpha, one line per hop count
+    for hop, col in zip(hops, colors_hop):
+        hop_idx = hops.index(hop)
+        rates_for_hop = [flip_by_alpha[a][hop_idx] for a in alphas]
+        axes[1].plot(alphas, rates_for_hop, 'o-', color=col, linewidth=2,
+                     markersize=7, markerfacecolor='white', markeredgewidth=2,
+                     label=f'{hop} hops')
+    axes[1].set_xlabel('Steering Multiplier (alpha)')
+    axes[1].set_ylabel('Logical Flip Rate')
+    axes[1].set_title('H3: Dose-Response by Difficulty')
+    axes[1].set_ylim(0, 1.15)
+    axes[1].legend(fontsize=9)
+
+    fig.tight_layout(pad=2.0)
+    plt.savefig(os.path.join(output_dir, 'figure_h3_difficulty.png'))
     plt.close()
-    print(f"  Saved: figure_h3_difficulty.png")
+    print("  Saved: figure_h3_difficulty.png")
 
 
-def generate_paper_figures(results_dir: str, output_dir: str, alpha_threshold: float = 10.0):
-    """Generate all figures."""
-    
+# ---------------------------------------------------------------------------
+# Main pipeline
+# ---------------------------------------------------------------------------
+
+def generate_paper_figures(results_dir: str, output_dir: str,
+                            alphas: List[float]):
     print("\n" + "="*70)
     print("GENERATING PAPER FIGURES")
     print("="*70)
-    
-    # Load all results once
+
     print("\nLoading experiment data...")
     all_results = find_experiment_results(results_dir, verbose=False)
     print(f"Found {len(all_results)} experiment result files")
-    
-    # Extract specific experiment data
+
     coconut_results, verbal_results = extract_comparison_data(all_results)
     difficulty_results = extract_difficulty_data(all_results)
-    
+
     if coconut_results is None or verbal_results is None:
         print("ERROR: Could not find comparison experiment results")
         return
-    
-    # Test all three hypotheses
-    h1_results = test_hypothesis_1(coconut_results, verbal_results, alpha_threshold)
-    h2_results = test_hypothesis_2(coconut_results, verbal_results, alpha_threshold)
-    h3_results = test_hypothesis_3(difficulty_results, alpha_threshold) if difficulty_results else {
-        "supported": False, "hops": [], "flip_rates": [], "slope": 0, "correlation": 0
-    }
-    
-    # Create figures
+
+    h1 = test_hypothesis_1(coconut_results, verbal_results, alphas)
+    h2 = test_hypothesis_2(coconut_results, verbal_results, alphas)
+    h3 = (test_hypothesis_3(difficulty_results, alphas) if difficulty_results
+          else {"supported": False, "hops": [], "flip_rates": [],
+                "slope": 0, "correlation": 0, "alphas": alphas,
+                "flip_by_alpha": {str(a): [] for a in alphas},
+                "mid_alpha": sorted(alphas)[len(alphas)//2]})
+
     print("\nCreating figures...")
     os.makedirs(output_dir, exist_ok=True)
-    create_figure_h1(h1_results, output_dir)
-    create_figure_h2(h2_results, output_dir)
-    
+    create_figure_h1(h1, output_dir)
+    create_figure_h2(h2, output_dir)
     if difficulty_results:
-        create_figure_h3(h3_results, output_dir)
-    
-    # Convert numpy types to Python native types for JSON serialization
-    def convert_to_serializable(obj):
-        if isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.bool_):
-            return bool(obj)
-        elif isinstance(obj, dict):
-            return {k: convert_to_serializable(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [convert_to_serializable(item) for item in obj]
-        else:
-            return obj
-    
-    all_hypotheses = {
-        "hypothesis_1": convert_to_serializable(h1_results),
-        "hypothesis_2": convert_to_serializable(h2_results),
-        "hypothesis_3": convert_to_serializable(h3_results),
-        "alpha_threshold": alpha_threshold
-    }
-    
+        create_figure_h3(h3, output_dir)
+
+    def _serial(obj):
+        if isinstance(obj, np.floating): return float(obj)
+        if isinstance(obj, np.integer):  return int(obj)
+        if isinstance(obj, np.bool_):    return bool(obj)
+        if isinstance(obj, dict):  return {k: _serial(v) for k, v in obj.items()}
+        if isinstance(obj, list):  return [_serial(v) for v in obj]
+        return obj
+
     with open(os.path.join(output_dir, "hypothesis_testing_results.json"), "w") as f:
-        json.dump(all_hypotheses, f, indent=2)
-    
-    # Print summary
+        json.dump(_serial({"h1": h1, "h2": h2, "h3": h3, "alphas": alphas}), f, indent=2)
+
+    mid = sorted(alphas)[len(alphas) // 2]
     print("\n" + "="*70)
     print("HYPOTHESIS TESTING SUMMARY")
     print("="*70)
-    print(f"\nH1 (Bottleneck): {h1_results['supported']} - "
-          f"Coconut: {h1_results['coconut_flip_rate']:.1%} vs Verbal: {h1_results['verbal_flip_rate']:.1%}")
-    print(f"H2 (Separation): {h2_results['supported']} - "
-          f"Verbal incoherence: {h2_results['verbal_incoherence_rate']:.1%} vs Coconut: {h2_results['coconut_incoherence_rate']:.1%}")
-    print(f"H3 (Difficulty): {h3_results['supported']} - "
-          f"Slope: {h3_results['slope']:.3f}, Correlation: {h3_results['correlation']:.3f}")
-    
+    print(f"H1 (Bottleneck): {h1['supported']} -- "
+          f"Coconut {h1['coconut_flip_rate']:.1%} vs Verbal {h1['verbal_flip_rate']:.1%}"
+          f"  (alpha={mid:g})")
+    print(f"H2 (Separation): {h2['supported']} -- "
+          f"Verbal incoh {h2['verbal_incoherence_rate']:.1%} vs "
+          f"Coconut {h2['coconut_incoherence_rate']:.1%}  (alpha={mid:g})")
+    print(f"H3 (Difficulty): {h3['supported']} -- "
+          f"Slope {h3['slope']:.3f}, r={h3['correlation']:.3f}  (alpha={mid:g})")
     print(f"\nAll figures saved to: {output_dir}")
 
 
 def main():
     args = parse_args()
-    
+
+    # Legacy: if only --alpha_threshold was given, treat it as a single alpha
+    if args.alpha_threshold is not None and args.alphas == [1, 2, 5, 10, 20, 50]:
+        alphas = [args.alpha_threshold]
+    else:
+        alphas = sorted(set(args.alphas))
+
     if args.output_dir is None:
         args.output_dir = os.path.join(args.results_dir, "figures")
-    
+
     print(f"Results directory: {args.results_dir}")
-    print(f"Output directory: {args.output_dir}")
-    print(f"Alpha threshold: {args.alpha_threshold}")
-    
-    generate_paper_figures(args.results_dir, args.output_dir, args.alpha_threshold)
+    print(f"Output directory:  {args.output_dir}")
+    print(f"Alpha thresholds:  {alphas}")
+
+    generate_paper_figures(args.results_dir, args.output_dir, alphas)
 
 
 if __name__ == "__main__":
-    args = parse_args()
     main()
