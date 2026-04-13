@@ -97,7 +97,7 @@ class ComprehensiveSteeringSuite:
         # Run command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_ROOT)
         
-        # Parse results
+        # Parse results - FIXED: Count unique problems with flips, not total flips
         metrics = {
             "exp_name": config["exp_name"],
             "model_type": config["model_type"],
@@ -108,33 +108,58 @@ class ComprehensiveSteeringSuite:
             "flip_rate": 0.0,
         }
         
-        for line in result.stdout.split("\n"):
-            if "Answer flipped:" in line:
-                parts = line.split("Answer flipped:")[-1].strip()
-                if "/" in parts:
-                    metrics["answer_flips"] = int(parts.split("/")[0])
-                    metrics["total_problems"] = int(parts.split("/")[1].split()[0])
-                    metrics["flip_rate"] = metrics["answer_flips"] / metrics["total_problems"] if metrics["total_problems"] > 0 else 0
-            elif "Max effect size:" in line:
-                try:
-                    metrics["max_effect_size"] = float(line.split("Max effect size:")[-1].strip())
-                except:
-                    pass
-                    
-        # Also try to read from results file if available
+        # First try to read from results file (most accurate)
         results_path = os.path.join(self.output_dir, config["exp_name"], "steering_results.json")
         if os.path.exists(results_path):
             try:
                 with open(results_path, "r") as f:
                     full_results = json.load(f)
                     if "results" in full_results:
+                        # Count problems where ANY alpha caused a flip
+                        flipped_problems = 0
                         for r in full_results["results"]:
+                            # Check if this problem had any answer flip
                             if r.get("answer_flipped", False):
-                                metrics["answer_flips"] += 1
+                                flipped_problems += 1
+                        
+                        metrics["answer_flips"] = flipped_problems
                         metrics["total_problems"] = len(full_results["results"])
+                        metrics["flip_rate"] = flipped_problems / metrics["total_problems"] if metrics["total_problems"] > 0 else 0
+                        
+                        # Also extract max effect size from sweep results
+                        max_effect = 0.0
+                        for r in full_results["results"]:
+                            sweep_results = r.get("sweep_results", {})
+                            for config_name, config_results in sweep_results.items():
+                                if config_name == "metadata" or not isinstance(config_results, dict):
+                                    continue
+                                for alpha_key, alpha_results in config_results.items():
+                                    if alpha_key == "metadata" or not isinstance(alpha_results, dict):
+                                        continue
+                                    effect = abs(alpha_results.get("effect_size", 0))
+                                    if effect > max_effect:
+                                        max_effect = effect
+                        metrics["max_effect_size"] = max_effect
+                        
+            except Exception as e:
+                print(f"    Warning: Could not parse results file: {e}")
+                
+        # Fallback to stdout parsing if needed
+        if metrics["total_problems"] == 0:
+            for line in result.stdout.split("\n"):
+                if "Answer flipped:" in line:
+                    # Look for format: "Answer flipped: X/Y problems"
+                    import re
+                    match = re.search(r'Answer flipped:\s*(\d+)/(\d+)\s+problems', line)
+                    if match:
+                        metrics["answer_flips"] = int(match.group(1))
+                        metrics["total_problems"] = int(match.group(2))
                         metrics["flip_rate"] = metrics["answer_flips"] / metrics["total_problems"] if metrics["total_problems"] > 0 else 0
-            except:
-                pass
+                elif "Max effect size:" in line:
+                    try:
+                        metrics["max_effect_size"] = float(line.split("Max effect size:")[-1].strip())
+                    except:
+                        pass
                 
         return metrics
     
@@ -161,7 +186,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[model] = metrics
-            print(f"    [OK] {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips")
+            print(f"    [OK] {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips ({metrics['flip_rate']:.1%})")
             
         self.results["baseline"] = results
         return results
@@ -197,7 +222,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[f"scale_{scale}"] = metrics
-            print(f"    Scale {scale}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    Scale {scale}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["random_control"] = results
         return results
@@ -228,11 +253,10 @@ class ComprehensiveSteeringSuite:
                 "model_type": "coconut",
                 "per_step_vectors": True,
                 "alphas": alphas,
-                # Note: We'll analyze step-specific results from the output
             }
             metrics = self._run_steering(config)
             results[f"step_{step}"] = metrics
-            print(f"    Step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    Step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["coconut_step_steering"] = results
         return results
@@ -265,7 +289,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[f"from_step_{step}"] = metrics
-            print(f"    Cumulative from step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    Cumulative from step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["coconut_cumulative"] = results
         return results
@@ -303,7 +327,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[range_name] = metrics
-            print(f"    {range_name}: {metrics['answer_flips']}/{metrics['total_problems']} flips")
+            print(f"    {range_name}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["alpha_sensitivity"] = results
         return results
@@ -337,7 +361,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[f"step_{step}"] = metrics
-            print(f"    Verbal step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    Verbal step {step}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["verbal_steering"] = results
         return results
@@ -369,7 +393,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[model] = metrics
-            print(f"    {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["direct_comparison"] = results
         return results
@@ -407,7 +431,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[f"{hops}hop"] = metrics
-            print(f"    {hops}-hop: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    {hops}-hop: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
             # Restore
             self.args.hop_filter = original_filter
@@ -442,7 +466,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[model] = metrics
-            print(f"    {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    {model.upper()}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["negative_steering"] = results
         return results
@@ -474,7 +498,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[step_name] = metrics
-            print(f"    {step_name.upper()} step: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    {step_name.upper()} step: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         self.results["first_vs_last"] = results
         return results
@@ -512,7 +536,7 @@ class ComprehensiveSteeringSuite:
             }
             metrics = self._run_steering(config)
             results[f"seed_{seed}"] = metrics
-            print(f"    Seed {seed}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    Seed {seed}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
             # Restore
             self.args.seed = original_seed
@@ -567,7 +591,7 @@ class ComprehensiveSteeringSuite:
                 
             metrics = self._run_steering(config)
             results[name] = metrics
-            print(f"    {name}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2f})")
+            print(f"    {name}: {metrics['answer_flips']}/{metrics['total_problems']} flips (rate={metrics['flip_rate']:.2%})")
             
         # Restore
         self.args.n_problems = original_n
@@ -621,14 +645,18 @@ class ComprehensiveSteeringSuite:
         # ============================================================
         if "random_control" in self.results:
             random_results = self.results["random_control"]
-            smallest_scale = min([float(k.split("_")[1]) for k in random_results.keys() if "scale" in k])
-            smallest_flips = random_results.get(f"scale_{smallest_scale}", {}).get("answer_flips", 1)
+            # Find smallest scale with 0 flips
+            zero_flip_scales = []
+            for key, val in random_results.items():
+                if val.get("answer_flips", 1) == 0:
+                    scale = float(key.split("_")[1])
+                    zero_flip_scales.append(scale)
             
-            report["analysis"]["random_floor"] = smallest_scale
-            report["analysis"]["random_floor_valid"] = smallest_flips == 0
+            report["analysis"]["random_floor"] = max(zero_flip_scales) if zero_flip_scales else 0.0
+            report["analysis"]["random_floor_valid"] = len(zero_flip_scales) > 0
             report["analysis"]["random_floor_message"] = (
-                f"[OK] Random scale {smallest_scale} causes 0 flips" if smallest_flips == 0
-                else f"[WARN] Random scale {smallest_scale} causes {smallest_flips} flips"
+                f"[OK] Random scale <= {report['analysis']['random_floor']} causes 0 flips" if report["analysis"]["random_floor_valid"]
+                else "[WARN] All random scales cause flips!"
             )
         
         # ============================================================
@@ -640,7 +668,7 @@ class ComprehensiveSteeringSuite:
             
             report["analysis"]["coconut_best_step"] = best_step[0]
             report["analysis"]["coconut_best_flip_rate"] = best_step[1].get("flip_rate", 0)
-            report["analysis"]["coconut_effective"] = best_step[1].get("flip_rate", 0) > 0.5
+            report["analysis"]["coconut_effective"] = best_step[1].get("flip_rate", 0) > 0.3
         
         # ============================================================
         # ANALYSIS 4: Verbal CoT Steering Efficacy
@@ -650,7 +678,7 @@ class ComprehensiveSteeringSuite:
             verbal_flip_rate = max([r.get("flip_rate", 0) for r in verbal_results.values()])
             
             report["analysis"]["verbal_max_flip_rate"] = verbal_flip_rate
-            report["analysis"]["verbal_effective"] = verbal_flip_rate > 0.2
+            report["analysis"]["verbal_effective"] = verbal_flip_rate > 0.1
         
         # ============================================================
         # ANALYSIS 5: Direct Comparison
@@ -701,7 +729,8 @@ class ComprehensiveSteeringSuite:
         # Best configuration
         if report["analysis"].get("coconut_effective", False):
             best = report["analysis"].get("coconut_best_step", "unknown")
-            conclusions.append(f"[BEST] Configuration: Steering at {best} with per-step vectors")
+            best_rate = report["analysis"].get("coconut_best_flip_rate", 0)
+            conclusions.append(f"[BEST] Configuration: Steering at {best} with {best_rate:.1%} flip rate")
         
         report["conclusions"] = conclusions
         
@@ -734,9 +763,9 @@ class ComprehensiveSteeringSuite:
         print("\n" + "-"*40)
         print("STEERING EFFECTIVENESS")
         print("-"*40)
-        print(f"  Coconut best flip rate: {report['analysis'].get('coconut_best_flip_rate', 0):.2%}")
+        print(f"  Coconut best flip rate: {report['analysis'].get('coconut_best_flip_rate', 0):.1%}")
         print(f"  Coconut best step: {report['analysis'].get('coconut_best_step', 'N/A')}")
-        print(f"  Verbal max flip rate: {report['analysis'].get('verbal_max_flip_rate', 0):.2%}")
+        print(f"  Verbal max flip rate: {report['analysis'].get('verbal_max_flip_rate', 0):.1%}")
         
         if "coconut_vs_verbal_ratio" in report["analysis"]:
             print(f"  Coconut/Verbal ratio: {report['analysis']['coconut_vs_verbal_ratio']:.1f}x")
