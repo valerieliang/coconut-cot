@@ -1,0 +1,2454 @@
+{
+  "experiment_name": "12_sweep_verbal_embedding_20260413_010514",
+  "args": {
+    "model_type": "verbal",
+    "coconut_checkpoint": "checkpoints/coconut/final",
+    "verbal_checkpoint": "checkpoints/verbal_cot/final",
+    "data_path": "data/prontoqa_split.csv",
+    "data_split": "test",
+    "n_problems": 5,
+    "start_idx": 0,
+    "hop_filter": null,
+    "alphas": [
+      0.0,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      20.0,
+      50.0
+    ],
+    "sweep_dim": "step",
+    "steering_method": "contrast",
+    "random_control": false,
+    "random_scale": 0.1,
+    "no_steering_control": false,
+    "no_blending": true,
+    "per_step_vectors": false,
+    "steer_all": false,
+    "acceptance_threshold": 0.5,
+    "output_dir": "results/steering\\steering_suite_20260413_010514",
+    "experiment_name": "12_sweep_verbal_embedding_20260413_010514",
+    "save_activations": false,
+    "save_latent_vectors": false,
+    "device": "cuda",
+    "seed": 42,
+    "verbose": true
+  },
+  "data_info": {
+    "data_path": "data/prontoqa_split.csv",
+    "data_split": "test",
+    "n_problems": 5,
+    "start_idx": 0,
+    "hop_filter": null,
+    "hop_distribution": {
+      "3": 2,
+      "4": 2,
+      "5": 1
+    }
+  },
+  "results": [
+    {
+      "model_type": "verbal",
+      "problem_idx": 0,
+      "n_hops": 5,
+      "question": "Every gerpus is a lorpus. Every fompus is a felpus. Sam is a sterpus. Every rompus is a yerpus. Every grimpus is a yerpus. Every chorpus is a felpus. Every yumpus is a brimpus. Every rompus is a hilpu",
+      "true_answer": "Sam is a yimpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "1.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "2.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "5.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "10.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "20.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "50.0": {
+            "logit_diff": -0.156402587890625,
+            "logit_a": 196.7685546875,
+            "logit_b": 196.92495727539062,
+            "prob_a": 0.4609788656234741,
+            "prob_b": 0.5390211343765259,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 392,
+            "target_step": 0
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 0,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.156402587890625,
+            "baseline_probs": {
+              "prob_a": 0.4609788656234741,
+              "prob_b": 0.5390211343765259
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 5,
+            "step_boundaries": [
+              392,
+              402,
+              412,
+              422,
+              432
+            ],
+            "target_position": 392
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "1.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "2.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "5.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "10.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "20.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "50.0": {
+            "logit_diff": -0.5691986083984375,
+            "logit_a": 197.01783752441406,
+            "logit_b": 197.5870361328125,
+            "prob_a": 0.36142173409461975,
+            "prob_b": 0.6385782361030579,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 402,
+            "target_step": 1
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 1,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.5691986083984375,
+            "baseline_probs": {
+              "prob_a": 0.36142173409461975,
+              "prob_b": 0.6385782361030579
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 5,
+            "step_boundaries": [
+              392,
+              402,
+              412,
+              422,
+              432
+            ],
+            "target_position": 402
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "1.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "2.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "5.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "10.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "20.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "50.0": {
+            "logit_diff": 0.120086669921875,
+            "logit_a": 198.24484252929688,
+            "logit_b": 198.124755859375,
+            "prob_a": 0.5299856662750244,
+            "prob_b": 0.470014363527298,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 412,
+            "target_step": 2
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 2,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.120086669921875,
+            "baseline_probs": {
+              "prob_a": 0.5299856662750244,
+              "prob_b": 0.470014363527298
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 5,
+            "step_boundaries": [
+              392,
+              402,
+              412,
+              422,
+              432
+            ],
+            "target_position": 412
+          }
+        },
+        "step_3": {
+          "0.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "1.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "2.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "5.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "10.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "20.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "50.0": {
+            "logit_diff": 0.774932861328125,
+            "logit_a": 198.2576141357422,
+            "logit_b": 197.48268127441406,
+            "prob_a": 0.6845870018005371,
+            "prob_b": 0.3154129981994629,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 422,
+            "target_step": 3
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 3,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.774932861328125,
+            "baseline_probs": {
+              "prob_a": 0.6845870018005371,
+              "prob_b": 0.3154129981994629
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 5,
+            "step_boundaries": [
+              392,
+              402,
+              412,
+              422,
+              432
+            ],
+            "target_position": 422
+          }
+        },
+        "step_4": {
+          "0.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "1.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "2.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "5.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "10.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "20.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "50.0": {
+            "logit_diff": 0.629974365234375,
+            "logit_a": 199.03770446777344,
+            "logit_b": 198.40773010253906,
+            "prob_a": 0.6524836421012878,
+            "prob_b": 0.34751635789871216,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 432,
+            "target_step": 4
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 4,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.629974365234375,
+            "baseline_probs": {
+              "prob_a": 0.6524836421012878,
+              "prob_b": 0.34751635789871216
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 5,
+            "step_boundaries": [
+              392,
+              402,
+              412,
+              422,
+              432
+            ],
+            "target_position": 432
+          }
+        }
+      }
+    },
+    {
+      "model_type": "verbal",
+      "problem_idx": 1,
+      "n_hops": 3,
+      "question": "Every grimpus is a jelpus. Every numpus is a worpus. Jack is a yerpus. Every jompus is a tumpus. Every yimpus is a impus. Every dumpus is a yerpus. Every worpus is a sterpus. Every zumpus is a yimpus.",
+      "true_answer": "Stella is a rorpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "1.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "2.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "5.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "10.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "20.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "50.0": {
+            "logit_diff": -0.4492950439453125,
+            "logit_a": 198.5165557861328,
+            "logit_b": 198.96585083007812,
+            "prob_a": 0.38952839374542236,
+            "prob_b": 0.6104716062545776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 342,
+            "target_step": 0
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 0,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.4492950439453125,
+            "baseline_probs": {
+              "prob_a": 0.38952839374542236,
+              "prob_b": 0.6104716062545776
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 3,
+            "step_boundaries": [
+              342,
+              353,
+              364
+            ],
+            "target_position": 342
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "1.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "2.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "5.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "10.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "20.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "50.0": {
+            "logit_diff": -0.0928955078125,
+            "logit_a": 197.62132263183594,
+            "logit_b": 197.71421813964844,
+            "prob_a": 0.4767927825450897,
+            "prob_b": 0.5232071876525879,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 353,
+            "target_step": 1
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 1,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.0928955078125,
+            "baseline_probs": {
+              "prob_a": 0.4767927825450897,
+              "prob_b": 0.5232071876525879
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 3,
+            "step_boundaries": [
+              342,
+              353,
+              364
+            ],
+            "target_position": 353
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "1.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "2.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "5.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "10.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "20.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "50.0": {
+            "logit_diff": 0.197540283203125,
+            "logit_a": 199.7241668701172,
+            "logit_b": 199.52662658691406,
+            "prob_a": 0.5492250919342041,
+            "prob_b": 0.4507748782634735,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 364,
+            "target_step": 2
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 2,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.197540283203125,
+            "baseline_probs": {
+              "prob_a": 0.5492250919342041,
+              "prob_b": 0.4507748782634735
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 3,
+            "step_boundaries": [
+              342,
+              353,
+              364
+            ],
+            "target_position": 364
+          }
+        }
+      }
+    },
+    {
+      "model_type": "verbal",
+      "problem_idx": 2,
+      "n_hops": 4,
+      "question": "Alex is a yumpus. Every gorpus is a gerpus. Every yumpus is a fompus. Every timpus is a scrompus. Tom is a sterpus. Every yumpus is a timpus. Every tumpus is a grimpus. Every brimpus is a terpus. Ever",
+      "true_answer": "Alex is a terpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "1.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "2.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "5.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "10.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "20.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "50.0": {
+            "logit_diff": 0.3289337158203125,
+            "logit_a": 197.5485076904297,
+            "logit_b": 197.21957397460938,
+            "prob_a": 0.5814998745918274,
+            "prob_b": 0.4185000956058502,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 367,
+            "target_step": 0
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 0,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.3289337158203125,
+            "baseline_probs": {
+              "prob_a": 0.5814998745918274,
+              "prob_b": 0.4185000956058502
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              367,
+              377,
+              387,
+              397
+            ],
+            "target_position": 367
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "1.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "2.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "5.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "10.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "20.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "50.0": {
+            "logit_diff": 0.687530517578125,
+            "logit_a": 197.0563507080078,
+            "logit_b": 196.3688201904297,
+            "prob_a": 0.6654173731803894,
+            "prob_b": 0.33458268642425537,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 1
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 1,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.687530517578125,
+            "baseline_probs": {
+              "prob_a": 0.6654173731803894,
+              "prob_b": 0.33458268642425537
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              367,
+              377,
+              387,
+              397
+            ],
+            "target_position": 377
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "1.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "2.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "5.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "10.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "20.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "50.0": {
+            "logit_diff": -0.1815032958984375,
+            "logit_a": 197.9319305419922,
+            "logit_b": 198.11343383789062,
+            "prob_a": 0.45474833250045776,
+            "prob_b": 0.5452516674995422,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 2
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 2,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.1815032958984375,
+            "baseline_probs": {
+              "prob_a": 0.45474833250045776,
+              "prob_b": 0.5452516674995422
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              367,
+              377,
+              387,
+              397
+            ],
+            "target_position": 387
+          }
+        },
+        "step_3": {
+          "0.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "1.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "2.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "5.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "10.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "20.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "50.0": {
+            "logit_diff": 0.48614501953125,
+            "logit_a": 199.01089477539062,
+            "logit_b": 198.52474975585938,
+            "prob_a": 0.6191979050636292,
+            "prob_b": 0.38080212473869324,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 397,
+            "target_step": 3
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 3,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.48614501953125,
+            "baseline_probs": {
+              "prob_a": 0.6191979050636292,
+              "prob_b": 0.38080212473869324
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              367,
+              377,
+              387,
+              397
+            ],
+            "target_position": 397
+          }
+        }
+      }
+    },
+    {
+      "model_type": "verbal",
+      "problem_idx": 3,
+      "n_hops": 4,
+      "question": "Every boompus is a vumpus. Every quimpus is a yerpus. Every hilpus is a chorpus. Polly is a sterpus. Every yerpus is a zhorpus. Eva is a vumpus. Every shumpus is a zumpus. Every rorpus is a boompus. P",
+      "true_answer": "Polly is a zhorpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "1.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "2.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "5.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "10.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "20.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "50.0": {
+            "logit_diff": -0.2599029541015625,
+            "logit_a": 197.38494873046875,
+            "logit_b": 197.6448516845703,
+            "prob_a": 0.4353875517845154,
+            "prob_b": 0.5646124482154846,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 377,
+            "target_step": 0
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 0,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.2599029541015625,
+            "baseline_probs": {
+              "prob_a": 0.4353875517845154,
+              "prob_b": 0.5646124482154846
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              377,
+              387,
+              398,
+              410
+            ],
+            "target_position": 377
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "1.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "2.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "5.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "10.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "20.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "50.0": {
+            "logit_diff": 0.136932373046875,
+            "logit_a": 197.67092895507812,
+            "logit_b": 197.53399658203125,
+            "prob_a": 0.5341796875,
+            "prob_b": 0.4658202826976776,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 1
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 1,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.136932373046875,
+            "baseline_probs": {
+              "prob_a": 0.5341796875,
+              "prob_b": 0.4658202826976776
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              377,
+              387,
+              398,
+              410
+            ],
+            "target_position": 387
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "1.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "2.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "5.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "10.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "20.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "50.0": {
+            "logit_diff": 0.3590850830078125,
+            "logit_a": 198.4039306640625,
+            "logit_b": 198.0448455810547,
+            "prob_a": 0.5888189673423767,
+            "prob_b": 0.4111810624599457,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 2
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 2,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.3590850830078125,
+            "baseline_probs": {
+              "prob_a": 0.5888189673423767,
+              "prob_b": 0.4111810624599457
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              377,
+              387,
+              398,
+              410
+            ],
+            "target_position": 398
+          }
+        },
+        "step_3": {
+          "0.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "1.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "2.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "5.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "10.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "20.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "50.0": {
+            "logit_diff": 0.2930908203125,
+            "logit_a": 199.1776885986328,
+            "logit_b": 198.8845977783203,
+            "prob_a": 0.5727526545524597,
+            "prob_b": 0.4272473454475403,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 410,
+            "target_step": 3
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 3,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.2930908203125,
+            "baseline_probs": {
+              "prob_a": 0.5727526545524597,
+              "prob_b": 0.4272473454475403
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 4,
+            "step_boundaries": [
+              377,
+              387,
+              398,
+              410
+            ],
+            "target_position": 410
+          }
+        }
+      }
+    },
+    {
+      "model_type": "verbal",
+      "problem_idx": 4,
+      "n_hops": 3,
+      "question": "Every shumpus is a hilpus. Every shumpus is a zumpus. Every sterpus is a jompus. Sally is a zumpus. Every rorpus is a jelpus. Every shumpus is a impus. Every sterpus is a yumpus. Every yerpus is a cho",
+      "true_answer": "Gabriel is a chorpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "1.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "2.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "5.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "10.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "20.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "50.0": {
+            "logit_diff": -0.035797119140625,
+            "logit_a": 197.51646423339844,
+            "logit_b": 197.55226135253906,
+            "prob_a": 0.49105167388916016,
+            "prob_b": 0.5089483261108398,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 387,
+            "target_step": 0
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 0,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": -0.035797119140625,
+            "baseline_probs": {
+              "prob_a": 0.49105167388916016,
+              "prob_b": 0.5089483261108398
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 3,
+            "step_boundaries": [
+              387,
+              398,
+              409
+            ],
+            "target_position": 387
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "1.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "2.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "5.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "10.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "20.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "50.0": {
+            "logit_diff": 0.146820068359375,
+            "logit_a": 198.4392547607422,
+            "logit_b": 198.2924346923828,
+            "prob_a": 0.5366392135620117,
+            "prob_b": 0.4633607864379883,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 398,
+            "target_step": 1
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 1,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.146820068359375,
+            "baseline_probs": {
+              "prob_a": 0.5366392135620117,
+              "prob_b": 0.4633607864379883
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 3,
+            "step_boundaries": [
+              387,
+              398,
+              409
+            ],
+            "target_position": 398
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "1.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "2.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "5.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "10.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "20.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "50.0": {
+            "logit_diff": 0.1884765625,
+            "logit_a": 199.8687744140625,
+            "logit_b": 199.6802978515625,
+            "prob_a": 0.5469801425933838,
+            "prob_b": 0.4530198872089386,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": true,
+            "target_position": 409,
+            "target_step": 2
+          },
+          "metadata": {
+            "steer_config": {
+              "step": 2,
+              "layer": -1,
+              "position": "step_end",
+              "normalization": "activation"
+            },
+            "baseline_logit_diff": 0.1884765625,
+            "baseline_probs": {
+              "prob_a": 0.5469801425933838,
+              "prob_b": 0.4530198872089386
+            },
+            "concept_a": "True",
+            "concept_b": "False",
+            "n_steps": 3,
+            "step_boundaries": [
+              387,
+              398,
+              409
+            ],
+            "target_position": 409
+          }
+        }
+      }
+    }
+  ],
+  "_metadata": {
+    "experiment_name": "12_sweep_verbal_embedding_20260413_010514",
+    "model_type": "verbal",
+    "sweep_dim": "step",
+    "steering_method": "contrast",
+    "random_control": false,
+    "random_scale": null,
+    "use_blending": false,
+    "per_step_vectors": false,
+    "n_problems": 5
+  }
+}

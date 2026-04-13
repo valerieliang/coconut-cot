@@ -1,0 +1,475 @@
+{
+  "experiment_name": "steering_suite_20260413_010514",
+  "timestamp": "20260413_010514",
+  "config": {
+    "n_problems": 50,
+    "start_idx": 0,
+    "hop_filter": null,
+    "seed": 42
+  },
+  "results": {
+    "baseline": {
+      "coconut": {
+        "exp_name": "01_baseline_coconut_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      },
+      "verbal": {
+        "exp_name": "01_baseline_verbal_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      }
+    },
+    "random_control": {
+      "scale_0.01": {
+        "exp_name": "02_random_scale_0.01_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 18,
+        "total_problems": 50,
+        "max_effect_size": 59.75056475774153,
+        "flip_rate": 0.36
+      },
+      "scale_0.05": {
+        "exp_name": "02_random_scale_0.05_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 18,
+        "total_problems": 50,
+        "max_effect_size": 59.75056475774153,
+        "flip_rate": 0.36
+      },
+      "scale_0.1": {
+        "exp_name": "02_random_scale_0.1_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 18,
+        "total_problems": 50,
+        "max_effect_size": 59.75056475774153,
+        "flip_rate": 0.36
+      },
+      "scale_0.2": {
+        "exp_name": "02_random_scale_0.2_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 18,
+        "total_problems": 50,
+        "max_effect_size": 59.75056475774153,
+        "flip_rate": 0.36
+      },
+      "scale_0.5": {
+        "exp_name": "02_random_scale_0.5_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 18,
+        "total_problems": 50,
+        "max_effect_size": 59.75056475774153,
+        "flip_rate": 0.36
+      },
+      "scale_1.0": {
+        "exp_name": "02_random_scale_1.0_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 18,
+        "total_problems": 50,
+        "max_effect_size": 59.75056475774153,
+        "flip_rate": 0.36
+      }
+    },
+    "coconut_step_steering": {
+      "step_0": {
+        "exp_name": "03_coconut_step_0_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      },
+      "step_1": {
+        "exp_name": "03_coconut_step_1_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      },
+      "step_2": {
+        "exp_name": "03_coconut_step_2_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      },
+      "step_3": {
+        "exp_name": "03_coconut_step_3_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      },
+      "step_4": {
+        "exp_name": "03_coconut_step_4_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      }
+    },
+    "coconut_cumulative": {
+      "from_step_0": {
+        "exp_name": "04_coconut_cumulative_0_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 35,
+        "total_problems": 50,
+        "max_effect_size": 944077.8362648127,
+        "flip_rate": 0.7
+      },
+      "from_step_1": {
+        "exp_name": "04_coconut_cumulative_1_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 35,
+        "total_problems": 50,
+        "max_effect_size": 944077.8362648127,
+        "flip_rate": 0.7
+      },
+      "from_step_2": {
+        "exp_name": "04_coconut_cumulative_2_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 35,
+        "total_problems": 50,
+        "max_effect_size": 944077.8362648127,
+        "flip_rate": 0.7
+      },
+      "from_step_3": {
+        "exp_name": "04_coconut_cumulative_3_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 35,
+        "total_problems": 50,
+        "max_effect_size": 944077.8362648127,
+        "flip_rate": 0.7
+      },
+      "from_step_4": {
+        "exp_name": "04_coconut_cumulative_4_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 35,
+        "total_problems": 50,
+        "max_effect_size": 944077.8362648127,
+        "flip_rate": 0.7
+      }
+    },
+    "alpha_sensitivity": {
+      "tiny": {
+        "exp_name": "05_alpha_tiny_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 1.3295812533789533,
+        "flip_rate": 0.0
+      },
+      "small": {
+        "exp_name": "05_alpha_small_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 34,
+        "total_problems": 50,
+        "max_effect_size": 9.317118875727614,
+        "flip_rate": 0.68
+      },
+      "medium": {
+        "exp_name": "05_alpha_medium_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      },
+      "large": {
+        "exp_name": "05_alpha_large_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 50,
+        "total_problems": 50,
+        "max_effect_size": 485.7996404101784,
+        "flip_rate": 1.0
+      }
+    },
+    "verbal_steering": {
+      "step_0": {
+        "exp_name": "06_verbal_step_0_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      },
+      "step_1": {
+        "exp_name": "06_verbal_step_1_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      },
+      "step_2": {
+        "exp_name": "06_verbal_step_2_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      },
+      "step_3": {
+        "exp_name": "06_verbal_step_3_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      },
+      "step_4": {
+        "exp_name": "06_verbal_step_4_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      }
+    },
+    "direct_comparison": {
+      "coconut": {
+        "exp_name": "07_comparison_coconut_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 50,
+        "total_problems": 50,
+        "max_effect_size": 95.54882575506821,
+        "flip_rate": 1.0
+      },
+      "verbal": {
+        "exp_name": "07_comparison_verbal_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      }
+    },
+    "difficulty_scaling": {
+      "3hop": {
+        "exp_name": "08_difficulty_3hop_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 20,
+        "total_problems": 20,
+        "max_effect_size": 41.283221253000804,
+        "flip_rate": 1.0
+      },
+      "4hop": {
+        "exp_name": "08_difficulty_4hop_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 19,
+        "total_problems": 20,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.95
+      },
+      "5hop": {
+        "exp_name": "08_difficulty_5hop_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 13,
+        "total_problems": 14,
+        "max_effect_size": 41.653657460142355,
+        "flip_rate": 0.9285714285714286
+      }
+    },
+    "negative_steering": {
+      "coconut": {
+        "exp_name": "09_negative_coconut_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 36,
+        "total_problems": 50,
+        "max_effect_size": 98.59315373759024,
+        "flip_rate": 0.72
+      },
+      "verbal": {
+        "exp_name": "09_negative_verbal_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 50,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      }
+    },
+    "first_vs_last": {
+      "first": {
+        "exp_name": "10_first_step_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      },
+      "last": {
+        "exp_name": "10_last_step_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 48,
+        "total_problems": 50,
+        "max_effect_size": 46.78386723218009,
+        "flip_rate": 0.96
+      }
+    },
+    "reproducibility": {
+      "seed_42": {
+        "exp_name": "11_reproducible_seed42_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 45,
+        "total_problems": 50,
+        "max_effect_size": 17.96247277872645,
+        "flip_rate": 0.9
+      },
+      "seed_123": {
+        "exp_name": "11_reproducible_seed123_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 45,
+        "total_problems": 50,
+        "max_effect_size": 17.96247277872645,
+        "flip_rate": 0.9
+      },
+      "seed_456": {
+        "exp_name": "11_reproducible_seed456_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 45,
+        "total_problems": 50,
+        "max_effect_size": 17.96247277872645,
+        "flip_rate": 0.9
+      }
+    },
+    "complete_sweep": {
+      "meaningful_per_step": {
+        "exp_name": "12_sweep_meaningful_per_step_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 5,
+        "total_problems": 5,
+        "max_effect_size": 46.421348824581194,
+        "flip_rate": 1.0
+      },
+      "meaningful_cumulative": {
+        "exp_name": "12_sweep_meaningful_cumulative_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 5,
+        "total_problems": 5,
+        "max_effect_size": 53901986.71759083,
+        "flip_rate": 1.0
+      },
+      "embedding_only": {
+        "exp_name": "12_sweep_embedding_only_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 1,
+        "total_problems": 5,
+        "max_effect_size": 26.914093894938393,
+        "flip_rate": 0.2
+      },
+      "random_scale_0.1": {
+        "exp_name": "12_sweep_random_scale_0.1_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 2,
+        "total_problems": 5,
+        "max_effect_size": 31.77457450372046,
+        "flip_rate": 0.4
+      },
+      "random_scale_0.5": {
+        "exp_name": "12_sweep_random_scale_0.5_20260413_010514",
+        "model_type": "coconut",
+        "return_code": 0,
+        "answer_flips": 2,
+        "total_problems": 5,
+        "max_effect_size": 31.77457450372046,
+        "flip_rate": 0.4
+      },
+      "verbal_per_step": {
+        "exp_name": "12_sweep_verbal_per_step_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 5,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      },
+      "verbal_embedding": {
+        "exp_name": "12_sweep_verbal_embedding_20260413_010514",
+        "model_type": "verbal",
+        "return_code": 0,
+        "answer_flips": 0,
+        "total_problems": 5,
+        "max_effect_size": 0.0,
+        "flip_rate": 0.0
+      }
+    }
+  },
+  "analysis": {
+    "baseline_valid": true,
+    "baseline_message": "[OK] Baseline stable",
+    "random_floor": 0.0,
+    "random_floor_valid": false,
+    "random_floor_message": "[WARN] All random scales cause flips!",
+    "coconut_best_step": "step_0",
+    "coconut_best_flip_rate": 0.96,
+    "coconut_effective": true,
+    "verbal_max_flip_rate": 0.0,
+    "verbal_effective": false,
+    "coconut_vs_verbal_ratio": 100.0,
+    "coconut_significantly_better": true,
+    "difficulty_scaling": {
+      "3hop": 1.0,
+      "4hop": 0.95,
+      "5hop": 0.9285714285714286
+    },
+    "negative_steering_works": true
+  },
+  "conclusions": [
+    "[CONFIRMED] MAIN HYPOTHESIS: Coconut is causally steerable, Verbal CoT is not",
+    "[WARN] Validity concern: Baseline or random control shows unexpected flips",
+    "[BEST] Configuration: Steering at step_0 with 96.0% flip rate"
+  ]
+}

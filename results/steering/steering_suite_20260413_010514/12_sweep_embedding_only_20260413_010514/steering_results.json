@@ -1,0 +1,3824 @@
+{
+  "experiment_name": "12_sweep_embedding_only_20260413_010514",
+  "args": {
+    "model_type": "coconut",
+    "coconut_checkpoint": "checkpoints/coconut/final",
+    "verbal_checkpoint": "checkpoints/verbal_cot/final",
+    "data_path": "data/prontoqa_split.csv",
+    "data_split": "test",
+    "n_problems": 5,
+    "start_idx": 0,
+    "hop_filter": null,
+    "alphas": [
+      0.0,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      20.0,
+      50.0
+    ],
+    "sweep_dim": "step",
+    "steering_method": "contrast",
+    "random_control": false,
+    "random_scale": 0.1,
+    "no_steering_control": false,
+    "no_blending": true,
+    "per_step_vectors": false,
+    "steer_all": false,
+    "acceptance_threshold": 0.5,
+    "output_dir": "results/steering\\steering_suite_20260413_010514",
+    "experiment_name": "12_sweep_embedding_only_20260413_010514",
+    "save_activations": false,
+    "save_latent_vectors": false,
+    "device": "cuda",
+    "seed": 42,
+    "verbose": true
+  },
+  "data_info": {
+    "data_path": "data/prontoqa_split.csv",
+    "data_split": "test",
+    "n_problems": 5,
+    "start_idx": 0,
+    "hop_filter": null,
+    "hop_distribution": {
+      "3": 2,
+      "4": 2,
+      "5": 1
+    }
+  },
+  "results": [
+    {
+      "model_type": "coconut",
+      "problem_idx": 0,
+      "n_hops": 5,
+      "question": "Every gerpus is a lorpus. Every fompus is a felpus. Sam is a sterpus. Every rompus is a yerpus. Every grimpus is a yerpus. Every chorpus is a felpus. Every yumpus is a brimpus. Every rompus is a hilpu",
+      "true_answer": "Sam is a yimpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "1.0": {
+            "logit_diff": 853.8163452148438,
+            "logit_a": -696.3757934570312,
+            "logit_b": -1550.192138671875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 144.16671752929688,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.20315196669585042,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 1349.9716796875,
+              "baseline_norm": 1108.5814208984375,
+              "norm_ratio": 1.2177469820676348,
+              "steer_vs_baseline_cos": 0.6088734269142151,
+              "next_vs_baseline_cos": 0.7823008298873901
+            },
+            "latent_norms": [
+              1349.9716796875,
+              1815.3927001953125,
+              2486.591796875,
+              3299.7861328125,
+              4094.49951171875
+            ]
+          },
+          "2.0": {
+            "logit_diff": 961.687255859375,
+            "logit_a": -1118.362548828125,
+            "logit_b": -2080.0498046875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 252.03762817382812,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.35515783894063935,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 2207.66845703125,
+              "baseline_norm": 1108.5814208984375,
+              "norm_ratio": 1.9914355548392246,
+              "steer_vs_baseline_cos": 0.24249206483364105,
+              "next_vs_baseline_cos": 0.5545971393585205
+            },
+            "latent_norms": [
+              2207.66845703125,
+              2490.159912109375,
+              2977.547607421875,
+              3694.981689453125,
+              4553.45703125
+            ]
+          },
+          "5.0": {
+            "logit_diff": 1468.289306640625,
+            "logit_a": -2300.575439453125,
+            "logit_b": -3768.86474609375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 758.6396789550781,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 1.0690341393249336,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 5364.267578125,
+              "baseline_norm": 1108.5814208984375,
+              "norm_ratio": 4.838857549794764,
+              "steer_vs_baseline_cos": -0.06049610674381256,
+              "next_vs_baseline_cos": 0.2032245397567749
+            },
+            "latent_norms": [
+              5364.267578125,
+              5207.52978515625,
+              5594.82470703125,
+              6113.02978515625,
+              6691.41064453125
+            ]
+          },
+          "10.0": {
+            "logit_diff": 2299.46630859375,
+            "logit_a": -3934.5859375,
+            "logit_b": -6234.05224609375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 1589.8166809082031,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 2.240283963923486,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 10852.1630859375,
+              "baseline_norm": 1108.5814208984375,
+              "norm_ratio": 9.789234134056292,
+              "steer_vs_baseline_cos": -0.16195999085903168,
+              "next_vs_baseline_cos": -0.03341188281774521
+            },
+            "latent_norms": [
+              10852.1630859375,
+              10348.2509765625,
+              10323.4248046875,
+              10629.75,
+              11134.349609375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 3321.3984375,
+            "logit_a": -5923.658203125,
+            "logit_b": -9245.056640625,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 2611.748809814453,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 3.680335630320018,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 21911.197265625,
+              "baseline_norm": 1108.5814208984375,
+              "norm_ratio": 19.765077108787974,
+              "steer_vs_baseline_cos": -0.2110251933336258,
+              "next_vs_baseline_cos": -0.16080242395401
+            },
+            "latent_norms": [
+              21911.197265625,
+              21185.130859375,
+              20769.9296875,
+              20601.650390625,
+              20651.21484375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 4926.3310546875,
+            "logit_a": -9602.7607421875,
+            "logit_b": -14529.091796875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 4216.681427001953,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 5.941920156788145,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 55152.859375,
+              "baseline_norm": 1108.5814208984375,
+              "norm_ratio": 49.750842233856375,
+              "steer_vs_baseline_cos": -0.23974111676216125,
+              "next_vs_baseline_cos": -0.2345060557126999
+            },
+            "latent_norms": [
+              55152.859375,
+              54276.38671875,
+              53553.0859375,
+              52955.93359375,
+              52476.8203125
+            ]
+          },
+          "metadata": {
+            "target_step": 0,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 709.6496276855469,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 5,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "1.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1603.0965576171875,
+              "baseline_norm": 1603.0965576171875,
+              "norm_ratio": 0.9999999999937621,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999995231628418
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "2.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1603.0965576171875,
+              "baseline_norm": 1603.0965576171875,
+              "norm_ratio": 0.9999999999937621,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999995231628418
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "5.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1603.0965576171875,
+              "baseline_norm": 1603.0965576171875,
+              "norm_ratio": 0.9999999999937621,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999995231628418
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "10.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1603.0965576171875,
+              "baseline_norm": 1603.0965576171875,
+              "norm_ratio": 0.9999999999937621,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999995231628418
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "20.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1603.0965576171875,
+              "baseline_norm": 1603.0965576171875,
+              "norm_ratio": 0.9999999999937621,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999995231628418
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "50.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1603.0965576171875,
+              "baseline_norm": 1603.0965576171875,
+              "norm_ratio": 0.9999999999937621,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999995231628418
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "metadata": {
+            "target_step": 1,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 709.6496276855469,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 5,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "1.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2088.63232421875,
+              "baseline_norm": 2088.63232421875,
+              "norm_ratio": 0.9999999999952123,
+              "steer_vs_baseline_cos": 0.9999995231628418,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "2.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2088.63232421875,
+              "baseline_norm": 2088.63232421875,
+              "norm_ratio": 0.9999999999952123,
+              "steer_vs_baseline_cos": 0.9999995231628418,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "5.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2088.63232421875,
+              "baseline_norm": 2088.63232421875,
+              "norm_ratio": 0.9999999999952123,
+              "steer_vs_baseline_cos": 0.9999995231628418,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "10.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2088.63232421875,
+              "baseline_norm": 2088.63232421875,
+              "norm_ratio": 0.9999999999952123,
+              "steer_vs_baseline_cos": 0.9999995231628418,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "20.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2088.63232421875,
+              "baseline_norm": 2088.63232421875,
+              "norm_ratio": 0.9999999999952123,
+              "steer_vs_baseline_cos": 0.9999995231628418,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "50.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2088.63232421875,
+              "baseline_norm": 2088.63232421875,
+              "norm_ratio": 0.9999999999952123,
+              "steer_vs_baseline_cos": 0.9999995231628418,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "metadata": {
+            "target_step": 2,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 709.6496276855469,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 5,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_3": {
+          "0.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "1.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2641.12939453125,
+              "baseline_norm": 2641.12939453125,
+              "norm_ratio": 0.9999999999962138,
+              "steer_vs_baseline_cos": 1.0000001192092896,
+              "next_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "2.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2641.12939453125,
+              "baseline_norm": 2641.12939453125,
+              "norm_ratio": 0.9999999999962138,
+              "steer_vs_baseline_cos": 1.0000001192092896,
+              "next_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "5.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2641.12939453125,
+              "baseline_norm": 2641.12939453125,
+              "norm_ratio": 0.9999999999962138,
+              "steer_vs_baseline_cos": 1.0000001192092896,
+              "next_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "10.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2641.12939453125,
+              "baseline_norm": 2641.12939453125,
+              "norm_ratio": 0.9999999999962138,
+              "steer_vs_baseline_cos": 1.0000001192092896,
+              "next_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "20.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2641.12939453125,
+              "baseline_norm": 2641.12939453125,
+              "norm_ratio": 0.9999999999962138,
+              "steer_vs_baseline_cos": 1.0000001192092896,
+              "next_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "50.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2641.12939453125,
+              "baseline_norm": 2641.12939453125,
+              "norm_ratio": 0.9999999999962138,
+              "steer_vs_baseline_cos": 1.0000001192092896,
+              "next_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "metadata": {
+            "target_step": 3,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 709.6496276855469,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 5,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_4": {
+          "0.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "1.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3283.82666015625,
+              "baseline_norm": 3283.82666015625,
+              "norm_ratio": 0.9999999999969548,
+              "steer_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "2.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3283.82666015625,
+              "baseline_norm": 3283.82666015625,
+              "norm_ratio": 0.9999999999969548,
+              "steer_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "5.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3283.82666015625,
+              "baseline_norm": 3283.82666015625,
+              "norm_ratio": 0.9999999999969548,
+              "steer_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "10.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3283.82666015625,
+              "baseline_norm": 3283.82666015625,
+              "norm_ratio": 0.9999999999969548,
+              "steer_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "20.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3283.82666015625,
+              "baseline_norm": 3283.82666015625,
+              "norm_ratio": 0.9999999999969548,
+              "steer_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "50.0": {
+            "logit_diff": 709.6496276855469,
+            "logit_a": -271.3194885253906,
+            "logit_b": -980.9691162109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3283.82666015625,
+              "baseline_norm": 3283.82666015625,
+              "norm_ratio": 0.9999999999969548,
+              "steer_vs_baseline_cos": 0.9999998211860657
+            },
+            "latent_norms": [
+              1108.5814208984375,
+              1603.0965576171875,
+              2088.63232421875,
+              2641.12939453125,
+              3283.82666015625
+            ]
+          },
+          "metadata": {
+            "target_step": 4,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 709.6496276855469,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 5,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        }
+      }
+    },
+    {
+      "model_type": "coconut",
+      "problem_idx": 1,
+      "n_hops": 3,
+      "question": "Every grimpus is a jelpus. Every numpus is a worpus. Jack is a yerpus. Every jompus is a tumpus. Every yimpus is a impus. Every dumpus is a yerpus. Every worpus is a sterpus. Every zumpus is a yimpus.",
+      "true_answer": "Stella is a rorpus.",
+      "steering_propagated": false,
+      "answer_flipped": true,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 389.06195068359375,
+            "logit_a": -545.399658203125,
+            "logit_b": -934.4616088867188,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 26.601577758789062,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0733916856734785,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 1233.2705078125,
+              "baseline_norm": 1047.69189453125,
+              "norm_ratio": 1.1771309048377327,
+              "steer_vs_baseline_cos": 0.5885655879974365,
+              "next_vs_baseline_cos": 0.7089352607727051
+            },
+            "latent_norms": [
+              1233.2705078125,
+              1488.9521484375,
+              2050.9150390625
+            ]
+          },
+          "2.0": {
+            "logit_diff": 248.42333984375,
+            "logit_a": -1300.21337890625,
+            "logit_b": -1548.63671875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": -114.03703308105469,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": -0.3146193117908439,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 2034.5936279296875,
+              "baseline_norm": 1047.69189453125,
+              "norm_ratio": 1.9419770626559727,
+              "steer_vs_baseline_cos": 0.19857975840568542,
+              "next_vs_baseline_cos": 0.33558937907218933
+            },
+            "latent_norms": [
+              2034.5936279296875,
+              2087.133544921875,
+              2414.56689453125
+            ]
+          },
+          "5.0": {
+            "logit_diff": -81.023681640625,
+            "logit_a": -3098.937744140625,
+            "logit_b": -3017.9140625,
+            "prob_a": 6.48428555694757e-36,
+            "prob_b": 1.0,
+            "change": -443.4840545654297,
+            "answer_flipped": true,
+            "flipped_direction": "True -> False",
+            "effect_size": -1.2235380408258698,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 5016.70361328125,
+              "baseline_norm": 1047.69189453125,
+              "norm_ratio": 4.788338670385439,
+              "steer_vs_baseline_cos": -0.111919105052948,
+              "next_vs_baseline_cos": -0.009616576135158539
+            },
+            "latent_norms": [
+              5016.70361328125,
+              4958.4013671875,
+              5242.8935546875
+            ]
+          },
+          "10.0": {
+            "logit_diff": -707.13037109375,
+            "logit_a": -4977.0283203125,
+            "logit_b": -4269.89794921875,
+            "prob_a": 0.0,
+            "prob_b": 1.0,
+            "change": -1069.5907440185547,
+            "answer_flipped": true,
+            "flipped_direction": "True -> False",
+            "effect_size": -2.950917738641873,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 10203.916015625,
+              "baseline_norm": 1047.69189453125,
+              "norm_ratio": 9.739424413599155,
+              "steer_vs_baseline_cos": -0.21272438764572144,
+              "next_vs_baseline_cos": -0.14121730625629425
+            },
+            "latent_norms": [
+              10203.916015625,
+              9933.5791015625,
+              10113.52734375
+            ]
+          },
+          "20.0": {
+            "logit_diff": -2173.4189453125,
+            "logit_a": -7583.884765625,
+            "logit_b": -5410.4658203125,
+            "prob_a": 0.0,
+            "prob_b": 1.0,
+            "change": -2535.8793182373047,
+            "answer_flipped": true,
+            "flipped_direction": "True -> False",
+            "effect_size": -6.996293961115008,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 20656.083984375,
+              "baseline_norm": 1047.69189453125,
+              "norm_ratio": 19.71580012406188,
+              "steer_vs_baseline_cos": -0.26088857650756836,
+              "next_vs_baseline_cos": -0.21460461616516113
+            },
+            "latent_norms": [
+              20656.083984375,
+              20196.90625,
+              20096.84375
+            ]
+          },
+          "50.0": {
+            "logit_diff": -6948.92333984375,
+            "logit_a": -14389.1103515625,
+            "logit_b": -7440.18701171875,
+            "prob_a": 0.0,
+            "prob_b": 1.0,
+            "change": -7311.383712768555,
+            "answer_flipped": true,
+            "flipped_direction": "True -> False",
+            "effect_size": -20.17153945346009,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 52072.3125,
+              "baseline_norm": 1047.69189453125,
+              "norm_ratio": 49.70193314590905,
+              "steer_vs_baseline_cos": -0.2889035642147064,
+              "next_vs_baseline_cos": -0.2599799335002899
+            },
+            "latent_norms": [
+              52072.3125,
+              51462.05859375,
+              51055.8359375
+            ]
+          },
+          "metadata": {
+            "target_step": 0,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 362.4603729248047,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 3,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1416.4398193359375,
+              "baseline_norm": 1416.4398193359375,
+              "norm_ratio": 0.9999999999929401,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1416.4398193359375,
+              "baseline_norm": 1416.4398193359375,
+              "norm_ratio": 0.9999999999929401,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1416.4398193359375,
+              "baseline_norm": 1416.4398193359375,
+              "norm_ratio": 0.9999999999929401,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1416.4398193359375,
+              "baseline_norm": 1416.4398193359375,
+              "norm_ratio": 0.9999999999929401,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1416.4398193359375,
+              "baseline_norm": 1416.4398193359375,
+              "norm_ratio": 0.9999999999929401,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1416.4398193359375,
+              "baseline_norm": 1416.4398193359375,
+              "norm_ratio": 0.9999999999929401,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "metadata": {
+            "target_step": 1,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 362.4603729248047,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 3,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1825.3538818359375,
+              "baseline_norm": 1825.3538818359375,
+              "norm_ratio": 0.9999999999945217,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1825.3538818359375,
+              "baseline_norm": 1825.3538818359375,
+              "norm_ratio": 0.9999999999945217,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1825.3538818359375,
+              "baseline_norm": 1825.3538818359375,
+              "norm_ratio": 0.9999999999945217,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1825.3538818359375,
+              "baseline_norm": 1825.3538818359375,
+              "norm_ratio": 0.9999999999945217,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1825.3538818359375,
+              "baseline_norm": 1825.3538818359375,
+              "norm_ratio": 0.9999999999945217,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 362.4603729248047,
+            "logit_a": -10.557632446289062,
+            "logit_b": -373.01800537109375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1825.3538818359375,
+              "baseline_norm": 1825.3538818359375,
+              "norm_ratio": 0.9999999999945217,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              1047.69189453125,
+              1416.4398193359375,
+              1825.3538818359375
+            ]
+          },
+          "metadata": {
+            "target_step": 2,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 362.4603729248047,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 3,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        }
+      }
+    },
+    {
+      "model_type": "coconut",
+      "problem_idx": 2,
+      "n_hops": 4,
+      "question": "Alex is a yumpus. Every gorpus is a gerpus. Every yumpus is a fompus. Every timpus is a scrompus. Tom is a sterpus. Every yumpus is a timpus. Every tumpus is a grimpus. Every brimpus is a terpus. Ever",
+      "true_answer": "Alex is a terpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 915.3700866699219,
+            "logit_a": -227.26211547851562,
+            "logit_b": -1142.6322021484375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 432.77284240722656,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.8967577986658632,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 1420.6212158203125,
+              "baseline_norm": 962.3129272460938,
+              "norm_ratio": 1.4762570215813513,
+              "steer_vs_baseline_cos": 0.7381284236907959,
+              "next_vs_baseline_cos": 0.8711930513381958
+            },
+            "latent_norms": [
+              1420.6212158203125,
+              2119.786376953125,
+              2853.69921875,
+              3671.114990234375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 1183.0010375976562,
+            "logit_a": -408.64715576171875,
+            "logit_b": -1591.648193359375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 700.4037933349609,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 1.4513215764524872,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 2227.63916015625,
+              "baseline_norm": 962.3129272460938,
+              "norm_ratio": 2.314880219377354,
+              "steer_vs_baseline_cos": 0.509458065032959,
+              "next_vs_baseline_cos": 0.7427502274513245
+            },
+            "latent_norms": [
+              2227.63916015625,
+              3128.853515625,
+              4074.504150390625,
+              4958.6669921875
+            ]
+          },
+          "5.0": {
+            "logit_diff": 1933.9541015625,
+            "logit_a": -1090.692626953125,
+            "logit_b": -3024.646728515625,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 1451.3568572998047,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 3.0073873702224834,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 4990.748046875,
+              "baseline_norm": 962.3129272460938,
+              "norm_ratio": 5.186200772658691,
+              "steer_vs_baseline_cos": 0.27926725149154663,
+              "next_vs_baseline_cos": 0.5671049356460571
+            },
+            "latent_norms": [
+              4990.748046875,
+              6165.404296875,
+              7399.26806640625,
+              8461.3212890625
+            ]
+          },
+          "10.0": {
+            "logit_diff": 3216.37158203125,
+            "logit_a": -2025.07080078125,
+            "logit_b": -5241.4423828125,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 2733.7743377685547,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 5.664711869511756,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 9756.6083984375,
+              "baseline_norm": 962.3129272460938,
+              "norm_ratio": 10.138706570488624,
+              "steer_vs_baseline_cos": 0.18707241117954254,
+              "next_vs_baseline_cos": 0.4253953993320465
+            },
+            "latent_norms": [
+              9756.6083984375,
+              10887.0361328125,
+              12430.5537109375,
+              13879.326171875
+            ]
+          },
+          "20.0": {
+            "logit_diff": 5214.31884765625,
+            "logit_a": -3103.10595703125,
+            "logit_b": -8317.4248046875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 4731.721603393555,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 9.804700834176138,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 19356.291015625,
+              "baseline_norm": 962.3129272460938,
+              "norm_ratio": 20.114341673468804,
+              "steer_vs_baseline_cos": 0.13887321949005127,
+              "next_vs_baseline_cos": 0.29111596941947937
+            },
+            "latent_norms": [
+              19356.291015625,
+              20200.98828125,
+              21687.9765625,
+              23356.9765625
+            ]
+          },
+          "50.0": {
+            "logit_diff": 9440.920654296875,
+            "logit_a": -4033.938720703125,
+            "logit_b": -13474.859375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 8958.32341003418,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 18.562732208967684,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 48211.46875,
+              "baseline_norm": 962.3129272460938,
+              "norm_ratio": 50.0995750804975,
+              "steer_vs_baseline_cos": 0.10944920033216476,
+              "next_vs_baseline_cos": 0.1753307282924652
+            },
+            "latent_norms": [
+              48211.46875,
+              48701.2578125,
+              49678.66015625,
+              50983.5625
+            ]
+          },
+          "metadata": {
+            "target_step": 0,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 482.5972442626953,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1339.302001953125,
+              "baseline_norm": 1339.302001953125,
+              "norm_ratio": 0.9999999999925335,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 1.0
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1339.302001953125,
+              "baseline_norm": 1339.302001953125,
+              "norm_ratio": 0.9999999999925335,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 1.0
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1339.302001953125,
+              "baseline_norm": 1339.302001953125,
+              "norm_ratio": 0.9999999999925335,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 1.0
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1339.302001953125,
+              "baseline_norm": 1339.302001953125,
+              "norm_ratio": 0.9999999999925335,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 1.0
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1339.302001953125,
+              "baseline_norm": 1339.302001953125,
+              "norm_ratio": 0.9999999999925335,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 1.0
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1339.302001953125,
+              "baseline_norm": 1339.302001953125,
+              "norm_ratio": 0.9999999999925335,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 1.0
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "metadata": {
+            "target_step": 1,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 482.5972442626953,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1728.856689453125,
+              "baseline_norm": 1728.856689453125,
+              "norm_ratio": 0.9999999999942158,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1728.856689453125,
+              "baseline_norm": 1728.856689453125,
+              "norm_ratio": 0.9999999999942158,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1728.856689453125,
+              "baseline_norm": 1728.856689453125,
+              "norm_ratio": 0.9999999999942158,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1728.856689453125,
+              "baseline_norm": 1728.856689453125,
+              "norm_ratio": 0.9999999999942158,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1728.856689453125,
+              "baseline_norm": 1728.856689453125,
+              "norm_ratio": 0.9999999999942158,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1728.856689453125,
+              "baseline_norm": 1728.856689453125,
+              "norm_ratio": 0.9999999999942158,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "metadata": {
+            "target_step": 2,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 482.5972442626953,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_3": {
+          "0.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2214.9599609375,
+              "baseline_norm": 2214.9599609375,
+              "norm_ratio": 0.9999999999954853,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2214.9599609375,
+              "baseline_norm": 2214.9599609375,
+              "norm_ratio": 0.9999999999954853,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2214.9599609375,
+              "baseline_norm": 2214.9599609375,
+              "norm_ratio": 0.9999999999954853,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2214.9599609375,
+              "baseline_norm": 2214.9599609375,
+              "norm_ratio": 0.9999999999954853,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2214.9599609375,
+              "baseline_norm": 2214.9599609375,
+              "norm_ratio": 0.9999999999954853,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 482.5972442626953,
+            "logit_a": -144.61351013183594,
+            "logit_b": -627.2107543945312,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2214.9599609375,
+              "baseline_norm": 2214.9599609375,
+              "norm_ratio": 0.9999999999954853,
+              "steer_vs_baseline_cos": 1.0000001192092896
+            },
+            "latent_norms": [
+              962.3129272460938,
+              1339.302001953125,
+              1728.856689453125,
+              2214.9599609375
+            ]
+          },
+          "metadata": {
+            "target_step": 3,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 482.5972442626953,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        }
+      }
+    },
+    {
+      "model_type": "coconut",
+      "problem_idx": 3,
+      "n_hops": 4,
+      "question": "Every boompus is a vumpus. Every quimpus is a yerpus. Every hilpus is a chorpus. Polly is a sterpus. Every yerpus is a zhorpus. Eva is a vumpus. Every shumpus is a zumpus. Every rorpus is a boompus. P",
+      "true_answer": "Polly is a zhorpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 809.7362670898438,
+            "logit_a": -422.87237548828125,
+            "logit_b": -1232.608642578125,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 47.298370361328125,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.06203570227067274,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 975.82275390625,
+              "baseline_norm": 763.1698608398438,
+              "norm_ratio": 1.2786442494199157,
+              "steer_vs_baseline_cos": 0.6393222212791443,
+              "next_vs_baseline_cos": 0.7091333270072937
+            },
+            "latent_norms": [
+              975.82275390625,
+              1349.545166015625,
+              2110.810302734375,
+              3046.805419921875
+            ]
+          },
+          "2.0": {
+            "logit_diff": 786.3531188964844,
+            "logit_a": -510.5610656738281,
+            "logit_b": -1296.9141845703125,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 23.91522216796875,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.03136678052151484,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 1576.9871826171875,
+              "baseline_norm": 763.1698608398438,
+              "norm_ratio": 2.0663645978643608,
+              "steer_vs_baseline_cos": 0.3072696924209595,
+              "next_vs_baseline_cos": 0.5869214534759521
+            },
+            "latent_norms": [
+              1576.9871826171875,
+              1780.191162109375,
+              2229.06005859375,
+              2874.33203125
+            ]
+          },
+          "5.0": {
+            "logit_diff": 1195.2935791015625,
+            "logit_a": -859.7081298828125,
+            "logit_b": -2055.001708984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 432.8556823730469,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.5677258229560113,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 3752.332763671875,
+              "baseline_norm": 763.1698608398438,
+              "norm_ratio": 4.916772734569715,
+              "steer_vs_baseline_cos": 0.01776120625436306,
+              "next_vs_baseline_cos": 0.330450177192688
+            },
+            "latent_norms": [
+              3752.332763671875,
+              3735.229248046875,
+              4055.8291015625,
+              4417.583984375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 2002.17041015625,
+            "logit_a": -1167.4453125,
+            "logit_b": -3169.61572265625,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 1239.7325134277344,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 1.6260111397232542,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 7529.87353515625,
+              "baseline_norm": 763.1698608398438,
+              "norm_ratio": 9.866576133878246,
+              "steer_vs_baseline_cos": -0.08365052938461304,
+              "next_vs_baseline_cos": 0.10493756830692291
+            },
+            "latent_norms": [
+              7529.87353515625,
+              7269.0615234375,
+              7438.09375,
+              7787.4794921875
+            ]
+          },
+          "20.0": {
+            "logit_diff": 3049.2850341796875,
+            "logit_a": -767.3782958984375,
+            "logit_b": -3816.663330078125,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 2286.847137451172,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 2.9993880777222945,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 15142.6953125,
+              "baseline_norm": 763.1698608398438,
+              "norm_ratio": 19.841841363648108,
+              "steer_vs_baseline_cos": -0.13359086215496063,
+              "next_vs_baseline_cos": -0.04711611568927765
+            },
+            "latent_norms": [
+              15142.6953125,
+              14667.0302734375,
+              14562.4013671875,
+              14682.3798828125
+            ]
+          },
+          "50.0": {
+            "logit_diff": 4905.482177734375,
+            "logit_a": 3095.22900390625,
+            "logit_b": -1810.253173828125,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 4143.044281005859,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 5.433943274308531,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 38026.59375,
+              "baseline_norm": 763.1698608398438,
+              "norm_ratio": 49.827169154262315,
+              "steer_vs_baseline_cos": -0.16309821605682373,
+              "next_vs_baseline_cos": -0.149408757686615
+            },
+            "latent_norms": [
+              38026.59375,
+              37353.53515625,
+              36896.32421875,
+              36607.640625
+            ]
+          },
+          "metadata": {
+            "target_step": 0,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 762.4378967285156,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1463.9990234375,
+              "baseline_norm": 1463.9990234375,
+              "norm_ratio": 0.9999999999931695,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 0.9999998807907104
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1463.9990234375,
+              "baseline_norm": 1463.9990234375,
+              "norm_ratio": 0.9999999999931695,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 0.9999998807907104
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1463.9990234375,
+              "baseline_norm": 1463.9990234375,
+              "norm_ratio": 0.9999999999931695,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 0.9999998807907104
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1463.9990234375,
+              "baseline_norm": 1463.9990234375,
+              "norm_ratio": 0.9999999999931695,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 0.9999998807907104
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1463.9990234375,
+              "baseline_norm": 1463.9990234375,
+              "norm_ratio": 0.9999999999931695,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 0.9999998807907104
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1463.9990234375,
+              "baseline_norm": 1463.9990234375,
+              "norm_ratio": 0.9999999999931695,
+              "steer_vs_baseline_cos": 1.0,
+              "next_vs_baseline_cos": 0.9999998807907104
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "metadata": {
+            "target_step": 1,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 762.4378967285156,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2228.816650390625,
+              "baseline_norm": 2228.816650390625,
+              "norm_ratio": 0.9999999999955134,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2228.816650390625,
+              "baseline_norm": 2228.816650390625,
+              "norm_ratio": 0.9999999999955134,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2228.816650390625,
+              "baseline_norm": 2228.816650390625,
+              "norm_ratio": 0.9999999999955134,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2228.816650390625,
+              "baseline_norm": 2228.816650390625,
+              "norm_ratio": 0.9999999999955134,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2228.816650390625,
+              "baseline_norm": 2228.816650390625,
+              "norm_ratio": 0.9999999999955134,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 2228.816650390625,
+              "baseline_norm": 2228.816650390625,
+              "norm_ratio": 0.9999999999955134,
+              "steer_vs_baseline_cos": 0.9999998807907104,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "metadata": {
+            "target_step": 2,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 762.4378967285156,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_3": {
+          "0.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3073.390380859375,
+              "baseline_norm": 3073.390380859375,
+              "norm_ratio": 0.9999999999967463,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3073.390380859375,
+              "baseline_norm": 3073.390380859375,
+              "norm_ratio": 0.9999999999967463,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3073.390380859375,
+              "baseline_norm": 3073.390380859375,
+              "norm_ratio": 0.9999999999967463,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3073.390380859375,
+              "baseline_norm": 3073.390380859375,
+              "norm_ratio": 0.9999999999967463,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3073.390380859375,
+              "baseline_norm": 3073.390380859375,
+              "norm_ratio": 0.9999999999967463,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 762.4378967285156,
+            "logit_a": -401.9700622558594,
+            "logit_b": -1164.407958984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 3073.390380859375,
+              "baseline_norm": 3073.390380859375,
+              "norm_ratio": 0.9999999999967463,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              763.1698608398438,
+              1463.9990234375,
+              2228.816650390625,
+              3073.390380859375
+            ]
+          },
+          "metadata": {
+            "target_step": 3,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 762.4378967285156,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 4,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        }
+      }
+    },
+    {
+      "model_type": "coconut",
+      "problem_idx": 4,
+      "n_hops": 3,
+      "question": "Every shumpus is a hilpus. Every shumpus is a zumpus. Every sterpus is a jompus. Sally is a zumpus. Every rorpus is a jelpus. Every shumpus is a impus. Every sterpus is a yumpus. Every yerpus is a cho",
+      "true_answer": "Gabriel is a chorpus.",
+      "steering_propagated": false,
+      "answer_flipped": false,
+      "sweep_results": {
+        "step_0": {
+          "0.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 612.6774291992188,
+            "logit_a": -570.9703979492188,
+            "logit_b": -1183.6478271484375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 218.17535400390625,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.5530398132782715,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 1560.01220703125,
+              "baseline_norm": 1046.4632568359375,
+              "norm_ratio": 1.490747235343131,
+              "steer_vs_baseline_cos": 0.7453738451004028,
+              "next_vs_baseline_cos": 0.8023921847343445
+            },
+            "latent_norms": [
+              1560.01220703125,
+              1864.7589111328125,
+              2478.886474609375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 795.9397583007812,
+            "logit_a": -1002.1416625976562,
+            "logit_b": -1798.0814208984375,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 401.43768310546875,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 1.0175806626789543,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 2441.794921875,
+              "baseline_norm": 1046.4632568359375,
+              "norm_ratio": 2.3333785547661003,
+              "steer_vs_baseline_cos": 0.5238447189331055,
+              "next_vs_baseline_cos": 0.6110308766365051
+            },
+            "latent_norms": [
+              2441.794921875,
+              2670.6328125,
+              3151.30517578125
+            ]
+          },
+          "5.0": {
+            "logit_diff": 1285.3095703125,
+            "logit_a": -2167.3876953125,
+            "logit_b": -3452.697265625,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 890.8074951171875,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 2.2580552831722396,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 5448.81298828125,
+              "baseline_norm": 1046.4632568359375,
+              "norm_ratio": 5.206884190758966,
+              "steer_vs_baseline_cos": 0.298800528049469,
+              "next_vs_baseline_cos": 0.433046817779541
+            },
+            "latent_norms": [
+              5448.81298828125,
+              5752.73828125,
+              6005.5849609375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 2459.646240234375,
+            "logit_a": -4071.759521484375,
+            "logit_b": -6531.40576171875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 2065.1441650390625,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 5.2348119183318325,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 10631.947265625,
+              "baseline_norm": 1046.4632568359375,
+              "norm_ratio": 10.15988587852565,
+              "steer_vs_baseline_cos": 0.20784087479114532,
+              "next_vs_baseline_cos": 0.35977792739868164
+            },
+            "latent_norms": [
+              10631.947265625,
+              11253.171875,
+              11729.32421875
+            ]
+          },
+          "20.0": {
+            "logit_diff": 4709.02734375,
+            "logit_a": -7133.408203125,
+            "logit_b": -11842.435546875,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 4314.5252685546875,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 10.936635165781134,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 21071.275390625,
+              "baseline_norm": 1046.4632568359375,
+              "norm_ratio": 20.135704959325828,
+              "steer_vs_baseline_cos": 0.16007781028747559,
+              "next_vs_baseline_cos": 0.3006923198699951
+            },
+            "latent_norms": [
+              21071.275390625,
+              21876.31640625,
+              22575.791015625
+            ]
+          },
+          "50.0": {
+            "logit_diff": 11012.16796875,
+            "logit_a": -15067.576171875,
+            "logit_b": -26079.744140625,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 10617.665893554688,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 26.914093894938393,
+            "was_steered": true,
+            "steering_propagated": true,
+            "propagation_metrics": {
+              "steered_norm": 52449.80078125,
+              "baseline_norm": 1046.4632568359375,
+              "norm_ratio": 50.12101517958196,
+              "steer_vs_baseline_cos": 0.1308472454547882,
+              "next_vs_baseline_cos": 0.2546676993370056
+            },
+            "latent_norms": [
+              52449.80078125,
+              53364.76953125,
+              54226.5859375
+            ]
+          },
+          "metadata": {
+            "target_step": 0,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 394.5020751953125,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 3,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_1": {
+          "0.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1497.54736328125,
+              "baseline_norm": 1497.54736328125,
+              "norm_ratio": 0.9999999999933225,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1497.54736328125,
+              "baseline_norm": 1497.54736328125,
+              "norm_ratio": 0.9999999999933225,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1497.54736328125,
+              "baseline_norm": 1497.54736328125,
+              "norm_ratio": 0.9999999999933225,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1497.54736328125,
+              "baseline_norm": 1497.54736328125,
+              "norm_ratio": 0.9999999999933225,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1497.54736328125,
+              "baseline_norm": 1497.54736328125,
+              "norm_ratio": 0.9999999999933225,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1497.54736328125,
+              "baseline_norm": 1497.54736328125,
+              "norm_ratio": 0.9999999999933225,
+              "steer_vs_baseline_cos": 0.9999999403953552,
+              "next_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "metadata": {
+            "target_step": 1,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 394.5020751953125,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 3,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        },
+        "step_2": {
+          "0.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {},
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "1.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1931.47802734375,
+              "baseline_norm": 1931.47802734375,
+              "norm_ratio": 0.9999999999948227,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "2.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1931.47802734375,
+              "baseline_norm": 1931.47802734375,
+              "norm_ratio": 0.9999999999948227,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "5.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1931.47802734375,
+              "baseline_norm": 1931.47802734375,
+              "norm_ratio": 0.9999999999948227,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "10.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1931.47802734375,
+              "baseline_norm": 1931.47802734375,
+              "norm_ratio": 0.9999999999948227,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "20.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1931.47802734375,
+              "baseline_norm": 1931.47802734375,
+              "norm_ratio": 0.9999999999948227,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "50.0": {
+            "logit_diff": 394.5020751953125,
+            "logit_a": -129.35137939453125,
+            "logit_b": -523.8534545898438,
+            "prob_a": 1.0,
+            "prob_b": 0.0,
+            "change": 0.0,
+            "answer_flipped": false,
+            "flipped_direction": null,
+            "effect_size": 0.0,
+            "was_steered": false,
+            "steering_propagated": false,
+            "propagation_metrics": {
+              "steered_norm": 1931.47802734375,
+              "baseline_norm": 1931.47802734375,
+              "norm_ratio": 0.9999999999948227,
+              "steer_vs_baseline_cos": 0.9999999403953552
+            },
+            "latent_norms": [
+              1046.4632568359375,
+              1497.54736328125,
+              1931.47802734375
+            ]
+          },
+          "metadata": {
+            "target_step": 2,
+            "steer_all": false,
+            "random_control": false,
+            "norm_mode": "activation",
+            "use_blending": false,
+            "baseline_logit_diff": 394.5020751953125,
+            "baseline_probs": {
+              "prob_a": 1.0,
+              "prob_b": 0.0
+            },
+            "n_hops": 3,
+            "concept_a": "True",
+            "concept_b": "False",
+            "token_id_a": 6407,
+            "token_id_b": 10352,
+            "vector_source": "contrast",
+            "random_scale": null
+          }
+        }
+      }
+    }
+  ],
+  "_metadata": {
+    "experiment_name": "12_sweep_embedding_only_20260413_010514",
+    "model_type": "coconut",
+    "sweep_dim": "step",
+    "steering_method": "contrast",
+    "random_control": false,
+    "random_scale": null,
+    "use_blending": false,
+    "per_step_vectors": false,
+    "n_problems": 5
+  }
+}
