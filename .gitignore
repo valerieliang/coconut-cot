@@ -1,6 +1,5 @@
 # large files
 checkpoints/
-data/
 
 # python
 __pycache__/
@@ -13,3 +12,4 @@ __pycache__/
 # misc
 .env
 diagnostics/
+old/
