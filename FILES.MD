@@ -7,7 +7,7 @@
 This document describes every file in the `steering/` experiment directory. The experiment tests two hypotheses about activation steering in Coconut (continuous-thought) models trained on ProsQA:
 
 - **H1:** Intermediate latent stages (L2–L5) are immune to steering because Coconut encodes a superposition of next steps at those positions. A single directional vector cannot perturb a distributed representation.
-- **H2:** The first (L1) and last (L5) latent steps are high-leverage injection points because L1 sets the initial graph search node and L5 commits to an answer path.
+- **H2:** The first last (L5) latent step is a high-leverage injection points because L5 commits to an answer path.
 
 ### File Tree
 
