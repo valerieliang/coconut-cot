@@ -26,9 +26,9 @@ bf16: True
 train_path: data/prosqa_train.json
 val_path: data/prosqa_valid.json
 reset_optimizer: True
-batch_size_training: 8
+batch_size_training: 4
 debug: False
-gradient_accumulation_steps: 16
+gradient_accumulation_steps: 32
 num_epochs: 50
 lr: !!float "1e-4"
 weight_decay: 0.01
