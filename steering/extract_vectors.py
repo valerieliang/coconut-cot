@@ -278,7 +278,7 @@ def extract_vectors(cfg):
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "steering_vectors.pt"
     torch.save(vectors, out_path)
-    print(f"\nSaved {len(vectors)} vectors → {out_path}")
+    print(f"\nSaved {len(vectors)} vectors -> {out_path}")
 
 
 if __name__ == "__main__":
