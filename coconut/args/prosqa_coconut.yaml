@@ -1,7 +1,7 @@
 # need 4 gpus
 
 project: coconut
-save_path: /home/valval/coconut-cot/checkpoints/prosqa-coconut
+save_path: YOUR_PATH_TO_SAVE_THE_MODEL
 name: prosqa-coconut
 
 only_eval: False
