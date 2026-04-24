@@ -1,18 +1,10 @@
 """
 run_steering_eval.py
 Injects steering vectors into Coconut's continuous thought feedback loop
-and logs per-sample accuracy.
+and measures the effect on generated answer accuracy.
 
-HOW INJECTION WORKS:
-  At pass `capture_pass`, instead of feeding back the raw thought vector,
-  we feed back: thought + alpha * steering_vector
-  This directly perturbs the continuous reasoning state at that step.
-
-Outputs steering/outputs/results.csv with columns:
-  position, alpha, sample_idx, correct, n_steps, chosen_token, expected_token
-
-Run from ~/coconut-cot:
-  python steering/run_steering_eval.py --config steering/steering_config.yaml
+Run: 
+    python steering/run_steering_eval.py --config steering/steering_config.yaml
 """
 
 import argparse
@@ -73,6 +65,7 @@ def load_model(cfg, device):
 
 
 def build_input(tokenizer, question: str, n_latent: int, device):
+    """Build the input sequence Coconut expects: question + latent block."""
     q_ids = tokenizer.encode(question)
     seq = (
         q_ids
@@ -82,129 +75,168 @@ def build_input(tokenizer, question: str, n_latent: int, device):
     )
     input_ids      = torch.tensor([seq], dtype=torch.long, device=device)
     attention_mask = torch.ones_like(input_ids)
-    labels         = input_ids.clone()
-    position_ids   = torch.arange(
-        0, input_ids.shape[1], dtype=torch.long, device=device
-    ).unsqueeze(0)
-    return input_ids, attention_mask, labels, position_ids
+    return input_ids, attention_mask
 
 
-def forward_with_capture(model, input_ids, attention_mask, labels,
-                         position_ids, capture_pass: int,
-                         steer_vec=None, steer_alpha: float = 0.0):
+def make_steering_forward(model, inject_pass: int, steer_vec, steer_alpha: float):
     """
-    Coconut forward pass with optional steering injection at `capture_pass`.
-    Returns (captured_thought_vector, final_token_logits).
+    Return a patched version of model.forward() that injects
+    `steer_alpha * steer_vec` into the continuous thought at `inject_pass`.
+    The patch is used once then removed.
     """
-    captured = [None]
-    logits_list = []
+    original_forward = model.forward
 
-    latent_indices = (input_ids == model.latent_token_id).nonzero()
-    latent_lists = [
-        [idx[1].item() for idx in latent_indices if idx[0] == i]
-        for i in range(input_ids.shape[0])
-    ]
-    max_n_latents = max([len(l) for l in latent_lists])
+    def patched_forward(input_ids, attention_mask, labels, position_ids, **kwargs):
+        from coconut import Outputs
+        from torch.nn import CrossEntropyLoss
 
-    next_compute_range = (0, input_ids.shape[1])
-    inputs_embeds = model.embedding(input_ids)
-
-    if max_n_latents > 0:
-        next_compute_range = (0, latent_indices[:, 1].min().item())
-
-    kv_cache = None
-
-    for pass_idx in range(max_n_latents):
-        if kv_cache is None:
-            outputs = model.base_causallm(
-                inputs_embeds=inputs_embeds[
-                    :, next_compute_range[0]:next_compute_range[1], :],
-                attention_mask=attention_mask[
-                    :, next_compute_range[0]:next_compute_range[1]],
-                position_ids=position_ids[
-                    :, next_compute_range[0]:next_compute_range[1]],
-                output_hidden_states=True,
-            )
-            hidden_states_offset = 0
-        else:
-            past_kv = [
-                (k[:, :, :next_compute_range[0], :],
-                 v[:, :, :next_compute_range[0], :])
-                for k, v in kv_cache
-            ]
-            outputs = model.base_causallm(
-                inputs_embeds=inputs_embeds[
-                    :, next_compute_range[0]:next_compute_range[1], :],
-                attention_mask=attention_mask[:, :next_compute_range[1]],
-                position_ids=position_ids[
-                    :, next_compute_range[0]:next_compute_range[1]],
-                past_key_values=past_kv,
-                output_hidden_states=True,
-            )
-            hidden_states_offset = next_compute_range[0]
-
-        logits_list.append(outputs.logits)
-        next_compute_range = (
-            next_compute_range[1],
-            (
-                input_ids.shape[1]
-                if pass_idx + 1 >= max_n_latents
-                else next_compute_range[1] + 1
-            ),
-        )
-        hidden_states = outputs.hidden_states[-1]
-        kv_cache      = outputs.past_key_values
-
-        filling_indices = [
-            (b, mask_list[pass_idx])
-            for b, mask_list in enumerate(latent_lists)
-            if len(mask_list) > pass_idx
+        logits_list = []
+        latent_indices = (input_ids == model.latent_token_id).nonzero()
+        latent_lists = [
+            [idx[1].item() for idx in latent_indices if idx[0] == i]
+            for i in range(input_ids.shape[0])
         ]
+        max_n_latents = max([len(l) for l in latent_lists])
 
-        tensor_list = [
-            [inputs_embeds[b, pos, :] for pos in range(inputs_embeds.shape[1])]
-            for b in range(inputs_embeds.shape[0])
-        ]
+        next_compute_range = (0, input_ids.shape[1])
+        inputs_embeds = model.embedding(input_ids)
+        if max_n_latents > 0:
+            next_compute_range = (0, latent_indices[:, 1].min().item())
 
-        for batch_idx, token_idx in filling_indices:
-            thought = hidden_states[
-                batch_idx, token_idx - 1 - hidden_states_offset, :
+        kv_cache = None
+
+        for pass_idx in range(max_n_latents):
+            if kv_cache is None:
+                outputs = model.base_causallm(
+                    inputs_embeds=inputs_embeds[
+                        :, next_compute_range[0]:next_compute_range[1], :],
+                    attention_mask=attention_mask[
+                        :, next_compute_range[0]:next_compute_range[1]],
+                    position_ids=position_ids[
+                        :, next_compute_range[0]:next_compute_range[1]],
+                    output_hidden_states=True,
+                )
+                hidden_states_offset = 0
+            else:
+                past_kv = [
+                    (k[:, :, :next_compute_range[0], :],
+                     v[:, :, :next_compute_range[0], :])
+                    for k, v in kv_cache
+                ]
+                outputs = model.base_causallm(
+                    inputs_embeds=inputs_embeds[
+                        :, next_compute_range[0]:next_compute_range[1], :],
+                    attention_mask=attention_mask[:, :next_compute_range[1]],
+                    position_ids=position_ids[
+                        :, next_compute_range[0]:next_compute_range[1]],
+                    past_key_values=past_kv,
+                    output_hidden_states=True,
+                )
+                hidden_states_offset = next_compute_range[0]
+
+            logits_list.append(outputs.logits)
+            next_compute_range = (
+                next_compute_range[1],
+                (
+                    input_ids.shape[1]
+                    if pass_idx + 1 >= max_n_latents
+                    else next_compute_range[1] + 1
+                ),
+            )
+            hidden_states = outputs.hidden_states[-1]
+            kv_cache      = outputs.past_key_values
+
+            filling_indices = [
+                (b, mask_list[pass_idx])
+                for b, mask_list in enumerate(latent_lists)
+                if len(mask_list) > pass_idx
             ]
-
-            if pass_idx == capture_pass:
-                captured[0] = thought.detach().cpu()
-                if steer_vec is not None and steer_alpha != 0.0:
+            tensor_list = [
+                [inputs_embeds[b, pos, :]
+                 for pos in range(inputs_embeds.shape[1])]
+                for b in range(inputs_embeds.shape[0])
+            ]
+            for batch_idx, token_idx in filling_indices:
+                thought = hidden_states[
+                    batch_idx, token_idx - 1 - hidden_states_offset, :
+                ]
+                # -- inject here --------------------------------------------
+                if pass_idx == inject_pass:
                     thought = thought + steer_alpha * steer_vec.to(thought.device)
+                tensor_list[batch_idx][token_idx] = thought
 
-            tensor_list[batch_idx][token_idx] = thought
+            inputs_embeds = torch.stack([
+                torch.stack(tensor_list[b])
+                for b in range(inputs_embeds.shape[0])
+            ])
 
-        inputs_embeds = torch.stack([
-            torch.stack(tensor_list[b])
-            for b in range(inputs_embeds.shape[0])
-        ])
+        past_kv = (
+            [(k[:, :, :next_compute_range[0], :],
+              v[:, :, :next_compute_range[0], :]) for k, v in kv_cache]
+            if kv_cache else None
+        )
+        outputs = model.base_causallm(
+            inputs_embeds=inputs_embeds[
+                :, next_compute_range[0]:next_compute_range[1], :],
+            attention_mask=attention_mask[:, :next_compute_range[1]],
+            position_ids=position_ids[
+                :, next_compute_range[0]:next_compute_range[1]],
+            past_key_values=past_kv,
+            output_hidden_states=True,
+        )
+        logits_list.append(outputs.logits)
+        logits = torch.cat(logits_list, dim=-2)
 
-    past_kv = (
-        [(k[:, :, :next_compute_range[0], :],
-          v[:, :, :next_compute_range[0], :]) for k, v in kv_cache]
-        if kv_cache else None
-    )
-    outputs = model.base_causallm(
-        inputs_embeds=inputs_embeds[
-            :, next_compute_range[0]:next_compute_range[1], :],
-        attention_mask=attention_mask[:, :next_compute_range[1]],
-        position_ids=position_ids[
-            :, next_compute_range[0]:next_compute_range[1]],
-        past_key_values=past_kv,
-        output_hidden_states=True,
-    )
-    logits_list.append(outputs.logits)
-    logits = torch.cat(logits_list, dim=-2)
-    return captured[0], logits[0, -1]
+        shift_logits = logits[..., :-1, :].contiguous()
+        shift_labels = labels[..., 1:].contiguous()
+        loss = CrossEntropyLoss()(
+            shift_logits.view(-1, shift_logits.size(-1)),
+            shift_labels.view(-1),
+        )
+        return Outputs(loss=loss, inputs_embeds=inputs_embeds, logits=logits)
+
+    return original_forward, patched_forward
 
 
-def get_answer_token(tokenizer, answer: str) -> int:
-    last_word = answer.strip().rstrip(".").split()[-1]
-    return tokenizer.encode(" " + last_word)[-1]
+def generate_answer(model, input_ids, attention_mask,
+                    steer_vec=None, inject_pass=None, steer_alpha=0.0):
+    """
+    Call model.generate(), optionally with a patched forward() that injects
+    a steering vector at inject_pass. Returns the decoded token list.
+    """
+    original_forward = None
+    if steer_vec is not None and steer_alpha != 0.0 and inject_pass is not None:
+        original_forward, patched = make_steering_forward(
+            model, inject_pass, steer_vec, steer_alpha
+        )
+        model.forward = patched
+
+    try:
+        with torch.no_grad():
+            out_ids = model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=16,
+            )
+    finally:
+        if original_forward is not None:
+            model.forward = original_forward
+
+    # out_ids is a 1D tensor of token ids (Coconut.generate returns shape [1, n])
+    return out_ids[0].tolist()
+
+
+def extract_answer_word(tokens: list[int], tokenizer) -> str:
+    """
+    Coconut outputs: <question> ### <answer sentence>
+    Decode and grab the last word after ###.
+    """
+    decoded = tokenizer.decode(tokens, skip_special_tokens=True)
+    if "###" in decoded:
+        answer_part = decoded.split("###")[-1].strip()
+    else:
+        answer_part = decoded.strip()
+    return answer_part.rstrip(".").split()[-1].lower() if answer_part else ""
 
 
 def run_eval(cfg):
@@ -228,53 +260,76 @@ def run_eval(cfg):
     with open(out_path, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=[
             "position", "alpha", "sample_idx",
-            "correct", "n_steps", "chosen_token", "expected_token",
+            "correct", "n_steps", "predicted_word", "expected_word",
         ])
         writer.writeheader()
 
         for sample_idx, sample in enumerate(val_data):
             n_steps      = len(sample.get("steps", []))
-            expected_tok = get_answer_token(tokenizer, sample["answer"])
-            inp          = build_input(tokenizer, sample["question"], n_latent, device)
+            idx_to_sym   = sample.get("idx_to_symbol", [])
+            target_idx   = sample.get("target")
+            expected_word = (
+                idx_to_sym[target_idx].lower()
+                if target_idx is not None and target_idx < len(idx_to_sym)
+                else sample["answer"].rstrip(".").split()[-1].lower()
+            )
 
-            # ── baseline: capture_pass=0 but no injection ──────────────────
-            with torch.no_grad():
-                _, logits = forward_with_capture(
-                    model, *inp, capture_pass=0,
-                    steer_vec=None, steer_alpha=0.0
-                )
-            pred = logits.argmax().item()
+            input_ids, attention_mask = build_input(
+                tokenizer, sample["question"], n_latent, device
+            )
+
+            # -- baseline ----------------------------------------------
+            tokens = generate_answer(model, input_ids, attention_mask)
+            pred_word = extract_answer_word(tokens, tokenizer)
             writer.writerow({
                 "position": 0, "alpha": 0, "sample_idx": sample_idx,
-                "correct": int(pred == expected_tok), "n_steps": n_steps,
-                "chosen_token": pred, "expected_token": expected_tok,
+                "correct": int(pred_word == expected_word),
+                "n_steps": n_steps,
+                "predicted_word": pred_word,
+                "expected_word": expected_word,
             })
 
-            # ── steered runs ───────────────────────────────────────────────
+            # -- steered runs -----------------------------------------
             for pos in cfg["latent_positions"]:
                 if pos not in vectors:
                     continue
                 vec          = vectors[pos]
-                capture_pass = pos - 1
+                inject_pass  = pos - 1
 
                 for alpha in cfg["alpha_sweep"]:
-                    with torch.no_grad():
-                        _, logits = forward_with_capture(
-                            model, *inp, capture_pass=capture_pass,
-                            steer_vec=vec, steer_alpha=float(alpha)
-                        )
-                    pred = logits.argmax().item()
+                    tokens = generate_answer(
+                        model, input_ids, attention_mask,
+                        steer_vec=vec, inject_pass=inject_pass,
+                        steer_alpha=float(alpha),
+                    )
+                    pred_word = extract_answer_word(tokens, tokenizer)
                     writer.writerow({
                         "position": pos, "alpha": alpha,
                         "sample_idx": sample_idx,
-                        "correct": int(pred == expected_tok),
+                        "correct": int(pred_word == expected_word),
                         "n_steps": n_steps,
-                        "chosen_token": pred,
-                        "expected_token": expected_tok,
+                        "predicted_word": pred_word,
+                        "expected_word": expected_word,
                     })
 
             if (sample_idx + 1) % 50 == 0:
                 print(f"  {sample_idx + 1}/{len(val_data)} samples done")
+
+    # -- quick terminal summary -------------------------------------------
+    import pandas as pd
+    df       = pd.read_csv(out_path)
+    baseline = df[df["alpha"] == 0].set_index("sample_idx")["correct"]
+    steered  = df[df["alpha"] > 0].copy()
+    steered["baseline"] = steered["sample_idx"].map(baseline)
+    steered["delta"]    = steered["correct"] - steered["baseline"]
+
+    print(f"\nBaseline accuracy: {baseline.mean():.4f} ({int(baseline.sum())}/300)")
+    print("\nMean accuracy delta by position (avg across all alphas):")
+    for pos, grp in steered.groupby("position"):
+        delta = grp["delta"].mean()
+        acc   = grp["correct"].mean()
+        flag  = " <-" if abs(delta) > 0.05 else ""
+        print(f"  L{pos}: delta={delta:+.4f}  steered_acc={acc:.4f}{flag}")
 
     print(f"\nResults saved to {out_path}")
 
