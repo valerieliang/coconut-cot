@@ -1,0 +1,18 @@
+model_path:  ~/coconut-cot/checkpoints/prosqa-coconut/checkpoint_48
+train_path:  coconut/data/prosqa_train.json
+val_path:    coconut/data/prosqa_valid.json
+output_dir:  steering/outputs
+
+# GPT-2 small has 12 layers (0-11). Layer 6 = middle of the network.
+# Good starting point; run a layer sweep later if results are weak.
+layer: 6
+
+# latent positions to test (ProsQA uses 6 latent tokens per sample;
+# positions 1-5 map to reasoning steps 1-5)
+latent_positions: [1, 2, 3, 4, 5]
+
+# steering strength sweep — start conservative, go up to 40
+alpha_sweep: [5, 10, 20, 40]
+
+# contrastive pairs for vector extraction (max = train set size)
+n_contrast: 500
