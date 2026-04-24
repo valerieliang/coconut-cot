@@ -1,7 +1,7 @@
 model_path:  ~/coconut-cot/checkpoints/prosqa-coconut/checkpoint_48
-train_path:  coconut/data/prosqa_train.json
-val_path:    coconut/data/prosqa_valid.json
-output_dir:  steering/outputs
+train_path:  ~/coconut-cot/coconut/data/prosqa_train.json
+val_path:    ~/coconut-cot/coconut/data/prosqa_valid.json
+output_dir:  ~/coconut-cot/steering/outputs
 
 # GPT-2 small has 12 layers (0-11). Layer 6 = middle of the network.
 # Good starting point; run a layer sweep later if results are weak.
