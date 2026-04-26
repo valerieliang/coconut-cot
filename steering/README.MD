@@ -110,16 +110,6 @@ Advanced analyses for the paper/experiment:
 
 Outputs `figures/analogy_L*.png` and prints summary tables to console.
 
-#### `debug_steering.py`
-
-Quick standalone diagnostic that:
-- Runs a single sample through the model
-- Injects steering at specified positions with varying alpha
-- Prints thought vector norms at each pass
-- Shows final answer predictions
-
-**Warning:** Uses hardcoded paths and checkpoint. Update paths before running if directory structure changes.
-
 ### Execution Order
 
 Run the scripts in this order for a complete experiment:
@@ -134,9 +124,6 @@ python steering/run_steering_eval.py --config steering/steering_config.yaml
 # 3. Run analyses (can run independently after vectors exist)
 python steering/steering_analysis.py --config steering/steering_config.yaml
 python steering/analyze_steering_vectors.py --config steering/steering_config.yaml
-
-# 4. Optional: debug a single sample
-python steering/debug_steering.py
 ```
 
 ### Dependencies
