@@ -146,5 +146,3 @@ pip install torch transformers numpy matplotlib scikit-learn pandas pyyaml
 
 - All scripts expect to be run from `~/coconut-cot/` (the project root)
 - The `coconut` module must be in the Python path (handled by sys.path.insert in each script)
-- `analyze_steering_vectors.py` requires the missing `from coconut import Coconut` import (add after line 60)
-- `debug_steering.py` uses hardcoded paths - update before use if directory structure changes
